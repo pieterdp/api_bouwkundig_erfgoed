@@ -40,7 +40,7 @@ package mysqlImport;
 # "huisnummer" => $row->{"HUISNR"},
 # "url" => $row->{"URL"}
 ##
-# @return true/false
+# @return int $r_id
 sub data_to_mysql {
 	my ($dbh, $data) = @_;
 	# All in one transaction #
@@ -77,6 +77,14 @@ sub data_to_mysql {
 			if (&insert_straat ($dbh, $row->{'straat_id'}, $row->{'straat'}, $row->{'deelgem_id'}) != 1) {
 				die "Error: failed to insert straat!";
 			}
+			##
+			# Difficult bit: add adressen
+			##
+			my $a_id = &insert_adres ($dbh, $row->{'prov_id'}, $row->{'gem_id'}, $row->{'deelgem_id'}, $row->{'straat_id'}, $row->{'huisnummer'}, 0, 0);
+			##
+			# Now add to relicten
+			##
+			my $r_id = &insert_relict ($dbh, $row->{'relict_id'}, $row->{'naam'}, $row->{'alt_naam'}, $row->{'url'}, $a_id);
 		}
 		$dbh->commit ();
 	};
@@ -85,6 +93,7 @@ sub data_to_mysql {
 		$dbh->rollback () or die $dbh->errstr;
 		return 0;
 	}
+	return $r_id;
 }
 
 ##
@@ -287,4 +296,45 @@ sub insert_adres {
 	$gem_id = mysqlMeta::fetch_item_by_nis ($dbh, 'gemeentes', $gem_nis);
 	$deelgem_id = mysqlMeta::fetch_item_by_nis ($dbh, 'deelgemeentes', $deelgem_nis);
 	$str_id = mysqlMeta::fetch_item_by_nis ($dbh, 'straten', $str_nis);
+	# Insert #
+	my $sth = $dbh->prepare ("INSERT INTO adres (prov_id, gem_id, deelgem_id, str_id, huisnummer, wgs84_lat, wgs84_long) VALUES (?, ?, ?, ?, ?, ?, ?)") or die $dbh->errstr;
+	my $rv = $sth->execute (($prov_id, $gem_id, $deelgem_id, $str_id, $huisnummer, $wgs84_lat, $wgs84_long)) or die $sth->errstr;
+	if ($rv >= 1 || $rv == 0) {
+		die "Error: failed to insert adres.";
+	}
+	return mysqlMeta::fetch_highest_ai ($dbh, 'adres', 'id');
+}
+##
+# Function to insert a tuple into relicten-table
+# @param dbh $dbh
+# @param string $relict_id, $naam, $alt_naam, $url
+# @param int $adres_id (references adres (id)
+# @return int r_id mysql-id for this item (!= relict_id)
+##
+#CREATE TABLE relicten (
+#	id int(16) NOT NULL AUTO_INCREMENT,
+#	relict_id int(16) NOT NULL,
+#	naam varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+#	alt_naam varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+#	url varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+#	adres_id int(16) NOT NULL,
+#	PRIMARY KEY (`id`),
+#	KEY `relict_id` (`relict_id`),
+#	KEY `naam` (`naam`),
+#	KEY `adres_id` (`adres_id`),
+#	FOREIGN KEY (adres_id) 
+#		REFERENCES adres (id)
+#		ON DELETE CASCADE
+#) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci  AUTO_INCREMENT=1;
+##
+sub insert_relict {
+	my ($dbh, $relict_id, $naam, $alt_naam, $url, $adres_id) = @_;
+	my ($r_id);
+	# Insert #
+	my $sth = $dbh->prepare ("INSERT INTO relicten (relict_id, naam, alt_naam, url, adres_id) VALUES (?, ?, ?, ?, ?)") or die $dbh->errstr;
+	my $rv = $sth->execute (($relict_id, $naam, $alt_naam, $url, $adres_id)) or die $sth->errstr;
+	if ($rv >= 1 || $rv == 0) {
+		die "Error: failed to insert relict.";
+	}
+	return mysqlMeta::fetch_highest_ai ($dbh, 'relicten', 'id');
 }
