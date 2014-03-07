@@ -167,3 +167,27 @@ sub fetch_item_by_nis {
 	}
 	return \@result;
 }
+
+##
+# Function to fetch the highest auto_increment of a certain table
+# @param dbh $dbh
+# @param string $table
+# @param string $column
+# @return int $ai
+sub fetch_highest_ai {
+	my ($dbh, $table, $column) = @_;
+	my ($ai, @result);
+	my $sth = $dbh->prepare ("SELECT MAX(".$dbh->quote_identifier ($column).") FROM ".$dbh->quote_identifier ($table)) or die $dbh->errstr;
+	$sth->execute () or die $sth->errstr;
+	while (my $row = $sth->fetchrow_arrayref ()) {
+		push (@result, $row);
+	}
+	if (scalar @result != 1) {
+		##
+		# This shouldn't happen
+		##
+		die "Error: executing a MAX-query on table $table and column $column failed.";
+		return 0;
+	}
+	return $result[0]->[0];
+}
