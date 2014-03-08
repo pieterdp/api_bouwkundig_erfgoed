@@ -40,19 +40,15 @@ package mysqlImport;
 # "huisnummer" => $row->{"HUISNR"},
 # "url" => $row->{"URL"}
 ##
-# @return int $r_id
+# @return array $r_ids
 sub data_to_mysql {
 	my ($dbh, $data) = @_;
+	my @r_ids;
 	# All in one transaction #
 	$dbh->{AutoCommit} = 0;
 	$dbh->{RaiseError} = 1;
 	eval {
-		foreach $row (@{$data}) {
-			# relict_id should be unique, check #
-			if (mysqlMeta::check_if_exists ($dbh, 'relicten', 'relict_id', $row->{'relict_id'}) == 1) {
-				warn "Item ".$row->{'relict_id'}." already exists.";
-				next;
-			}
+		foreach my $row (@{$data}) {
 			##
 			# Add to provincies-table (only table with no foreign keys)
 			##
@@ -77,6 +73,14 @@ sub data_to_mysql {
 			if (&insert_straat ($dbh, $row->{'straat_id'}, $row->{'straat'}, $row->{'deelgem_id'}) != 1) {
 				die "Error: failed to insert straat!";
 			}
+		}
+		$dbh->commit ();
+		foreach my $row (@{$data}) {
+			# relict_id should be unique, check #
+			#if (mysqlMeta::check_if_exists ($dbh, 'relicten', 'relict_id', $row->{'relict_id'}) == 1) {
+			#	warn "Item ".$row->{'relict_id'}." already exists.";
+			#	next;
+			#}
 			##
 			# Difficult bit: add adressen
 			##
@@ -84,7 +88,7 @@ sub data_to_mysql {
 			##
 			# Now add to relicten
 			##
-			my $r_id = &insert_relict ($dbh, $row->{'relict_id'}, $row->{'naam'}, $row->{'alt_naam'}, $row->{'url'}, $a_id);
+			push (@r_ids, &insert_relict ($dbh, $row->{'relict_id'}, $row->{'naam'}, $row->{'alt_naam'}, $row->{'url'}, $a_id));
 		}
 		$dbh->commit ();
 	};
@@ -93,7 +97,7 @@ sub data_to_mysql {
 		$dbh->rollback () or die $dbh->errstr;
 		return 0;
 	}
-	return $r_id;
+	return \@r_ids;
 }
 
 ##
@@ -240,13 +244,17 @@ sub insert_straat {
 		die "Error: NIS ".$deelgem_nis." translates to multiple or none items from the deelgemeentes-table.";
 		return 0;
 	}
-	if (mysqlMeta::check_if_exists ($dbh, 'straten', 'nis', $id) == 1) {
-		# Gemeente already in DB, but this is not fatal, so return true #
+	# Check whether combination street - deelgem already exists #
+	my $sth = $dbh->prepare ("SELECT s.id FROM straten s, deelgemeentes g WHERE s.naam = ? AND s.deelgem_id = g.id AND g.naam = ?") or die $dbh->errstr;
+	$sth->execute (($name, $r->[0]->{'naam'})) or die $sth->errstr;
+	my $rv = $sth->fetchall_arrayref ();
+	if (scalar @{$rv} != 0) {
+		# OK, exists but no error
 		return 1;
 	}
 	# Insert #
-	my $sth = $dbh->prepare ("INSERT INTO straten (naam, nis, deelgem_id) VALUES (?, ?, ?)") or die $dbh->errstr;
-	my $rv = $sth->execute (($name, $id, $r->[0]->{'id'})) or die $sth->errstr;
+	$sth = $dbh->prepare ("INSERT INTO straten (naam, nis, deelgem_id) VALUES (?, ?, ?)") or die $dbh->errstr;
+	$rv = $sth->execute (($name, $id, $r->[0]->{'id'})) or die $sth->errstr;
 	if ($rv >= 1 || $rv == 0) {
 		return 1;
 	} else {
@@ -293,15 +301,16 @@ sub insert_adres {
 	# Fetch foreign keys
 	##
 	$prov_id = mysqlMeta::fetch_item_by_nis ($dbh, 'provincies', $prov_nis);
+	$prov_id = $prov_id->[0]->{'id'};
 	$gem_id = mysqlMeta::fetch_item_by_nis ($dbh, 'gemeentes', $gem_nis);
+	$gem_id = $gem_id->[0]->{'id'};
 	$deelgem_id = mysqlMeta::fetch_item_by_nis ($dbh, 'deelgemeentes', $deelgem_nis);
+	$deelgem_id = $deelgem_id->[0]->{'id'};
 	$str_id = mysqlMeta::fetch_item_by_nis ($dbh, 'straten', $str_nis);
+	$str_id = $str_id->[0]->{'id'};
 	# Insert #
 	my $sth = $dbh->prepare ("INSERT INTO adres (prov_id, gem_id, deelgem_id, str_id, huisnummer, wgs84_lat, wgs84_long) VALUES (?, ?, ?, ?, ?, ?, ?)") or die $dbh->errstr;
-	my $rv = $sth->execute (($prov_id, $gem_id, $deelgem_id, $str_id, $huisnummer, $wgs84_lat, $wgs84_long)) or die $sth->errstr;
-	if ($rv >= 1 || $rv == 0) {
-		die "Error: failed to insert adres.";
-	}
+	$sth->execute (($prov_id, $gem_id, $deelgem_id, $str_id, $huisnummer, $wgs84_lat, $wgs84_long)) or die $sth->errstr;
 	return mysqlMeta::fetch_highest_ai ($dbh, 'adres', 'id');
 }
 ##
@@ -332,9 +341,6 @@ sub insert_relict {
 	my ($r_id);
 	# Insert #
 	my $sth = $dbh->prepare ("INSERT INTO relicten (relict_id, naam, alt_naam, url, adres_id) VALUES (?, ?, ?, ?, ?)") or die $dbh->errstr;
-	my $rv = $sth->execute (($relict_id, $naam, $alt_naam, $url, $adres_id)) or die $sth->errstr;
-	if ($rv >= 1 || $rv == 0) {
-		die "Error: failed to insert relict.";
-	}
+	$sth->execute (($relict_id, $naam, $alt_naam, $url, $adres_id)) or die $sth->errstr;
 	return mysqlMeta::fetch_highest_ai ($dbh, 'relicten', 'id');
 }
