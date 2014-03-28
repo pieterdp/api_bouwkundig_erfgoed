@@ -117,9 +117,9 @@ Bij het zoeken naar monumenten krijg je een lijst resultaten uit de eigen databa
 <li><strong>kerken in Ieper, Ieper</strong> &mdash; zoekt alle kerken in de deelgemeente Ieper van de hoofdgemeente Ieper</li>
 <li><strong>gevangenissen in Brugge</strong> &mdash; zoekt alle gevangenissen in de hoofdgemeente Brugge</li>
 <li><strong>herenhuizen in Ramskapelle</strong> &mdash; zoekt alle herenhuizen in de deelgemeente Ramskapelle (dit zijn alle deelgemeentes die Ramskapelle heten!)</li>
-<li><strong><a href="index.php?type=API&amp;query='.urlencode ('herenhuizen in Ramskapelle').'&amp;qt=typo">herenhuizen in Ramskapelle</a></strong> &mdash; API-query voor <emp>herenhuizen in Ramskapelle</emp>.</li>
+<li><strong><a href="vioe.php?type=API&amp;query='.urlencode ('herenhuizen in Ramskapelle').'&amp;qt=typo">herenhuizen in Ramskapelle</a></strong> &mdash; API-query voor <emp>herenhuizen in Ramskapelle</emp>.</li>
 <li><strong>Parochiekerk Sint-Maarten in Sint-Truiden</strong> &mdash; zoekt naar de Parochiekerk Sint-Maarten in de deelgemeente Sint-Truiden (dit zijn alle deelgemeentes die Sint-Truiden heten!)</li>
-<li><strong><a href="index.php?type=API&amp;query='.urlencode ('Parochiekerk Sint-Maarten in Sint-Truiden').'&amp;qt=mon">Parochiekerk Sint-Maarten in Sint-Truiden</a></strong> &mdash; API-query voor <emp>Parochiekerk Sint-Maarten in Sint-Truiden</emp>.</li>
+<li><strong><a href="vioe.php?type=API&amp;query='.urlencode ('Parochiekerk Sint-Maarten in Sint-Truiden').'&amp;qt=mon">Parochiekerk Sint-Maarten in Sint-Truiden</a></strong> &mdash; API-query voor <emp>Parochiekerk Sint-Maarten in Sint-Truiden</emp>.</li>
 
 </ul>';
 	echo $html->create_base_page ('Zoeken naar monumenten', $form.$expl);
