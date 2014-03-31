@@ -5,7 +5,7 @@ class mysql {
 	private $c;
 
 	function __construct () {
-		$this->c = new mysqli ('localhost', 'helptux_ewp', '2!z(VHaCP][}', 'helptux_erfgoed');
+		$this->c = new mysqli ('', '', '', '');
 	}
 
 	/*
