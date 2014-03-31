@@ -4,7 +4,7 @@ include_once ('lib/mysql_connect.php');
 
 class nlp {
 
-	private $m;
+	protected $m;
 
 	function __construct () {
 		$this->m = new mysql ();

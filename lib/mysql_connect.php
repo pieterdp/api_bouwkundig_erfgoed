@@ -14,35 +14,58 @@ class mysql {
 	}
 
 	/*
-	 * Match an item and return result (using eq instead of like)
-	 * @param string $item
+	 * Fetch an item by ID
 	 * @param string $table
-	 * @param string $column
-	 * @return array $nis
+	 * @param int $id
+	 * @param string $cn column to be returned
 	 */
-	public function match_item ($item, $table, $column) {
-		$query = "SELECT * FROM %s WHERE % = ?";
-		$query = sprintf ($query, $this->c->real_escape_string ($table), $this->c->real_escape_string ($column));
-		
+	public function item_by_id ($table, $id, $cn) {
+		$query = "SELECT $cn FROM $table t WHERE t.id = ?";
+		$st = $this->c->prepare ($query) or die ($this->c->error);
+		$st->bind_param ('d', $id);
+		$st->execute ();
+		$st->bind_result ($r);
+		$st->fetch ();
+		$st->close;
+		return $r;
 	}
 
 	/*
 	 * Function to return the nis code(s) of a certain gemeente, without extra identifiers (e.g. provincie)
 	 * @param string $gemeente
 	 * @param string $use_like use like (true) of exact match (false)
+	 * @param string $gis use the gis_* tables (false)
 	 * @return array $nis [] = array ('nis' => $n, 'gem' => $g, 'prov_n' => $p)
 	 */
-	public function match_gemeente ($gemeente, $use_like = false) {
-		$nis = array ();
-		if ($use_like == true) {
-			$query = "SELECT g.nis, g.naam, p.nis, g.id, p.id FROM gemeentes g, provincies p WHERE g.naam LIKE CONCAT('%', ?, '%') AND g.prov_id = p.id";
+	public function match_gemeente ($gemeente, $use_like = false, $gis = false) {
+		if ($gis == true) {
+			$tg = 'gis_gemeentes';
+			$tp = 'gis_provincies';
+			$pw = null;
+			if ($use_like == true) {
+				$query = "SELECT g.nis, g.naam, g.id FROM $tg g WHERE g.naam LIKE CONCAT('%', ?, '%')";
+			} else {
+				$query = "SELECT g.nis, g.naam, g.id FROM $tg g WHERE g.naam = ?";
+			}
 		} else {
-			$query = "SELECT g.nis, g.naam, p.nis, g.id, p.id FROM gemeentes g, provincies p WHERE g.naam = ? AND g.prov_id = p.id";
+			$tg = 'gemeentes';
+			$tp = 'provincies';
+			$pw = 'AND g.prov_id = p.id';
+			if ($use_like == true) {
+				$query = "SELECT g.nis, g.naam, p.nis, g.id, p.id FROM $tg g, $tp p WHERE g.naam LIKE CONCAT('%', ?, '%') $pw";
+			} else {
+				$query = "SELECT g.nis, g.naam, p.nis, g.id, p.id FROM $tg g, $tp p WHERE g.naam = ? $pw";
+			}
 		}
-		$st = $this->c->prepare ($query);
+		$nis = array ();
+		$st = $this->c->prepare ($query) or die ($this->c->error);
 		$st->bind_param ('s', $gemeente);
 		$st->execute ();
-		$st->bind_result ($n, $g, $p, $gid, $pid);
+		if ($gis == true) {
+			$st->bind_result ($n, $g, $gid);
+		} else {
+			$st->bind_result ($n, $g, $p, $gid, $pid);
+		}
 		while ($st->fetch ()) {
 			array_push ($nis, array ('nis' => $n, 'gem' => $g, 'prov_n' => $p, 'g_id' => $gid, 'p_id' => $pid));
 		}
@@ -54,24 +77,106 @@ class mysql {
 	 * Function to return the nis code(s) of a certain deelgemeente, with NIS of the master-gemeente and prov
 	 * @param string $deelgemeente
 	 * @param string $use_like
+	 * @param string $gis use the gis_* tables (false)
 	 * @return array $nis [] = array ('dg' => $n, 'gem_n' => $g, 'prov_n' => $p)
 	 */
-	public function match_deelgemeente ($deelgemeente, $use_like = false) {
-		$nis = array ();
-		if ($use_like == true) {
-			$query = "SELECT d.naam, g.nis, p.nis, d.id, g.id, p.id FROM gemeentes g, provincies p, deelgemeentes d WHERE d.naam LIKE CONCAT('%', ?, '%') AND g.prov_id = p.id AND d.gem_id = g.id";
+	public function match_deelgemeente ($deelgemeente, $use_like = false, $gis = false) {
+		if ($gis == true) {
+			$tg = 'gis_gemeentes';
+			$tp = 'gis_provincies';
+			$td = 'gis_deelgemeentes';
+			$pw = null;
+			$gw = 'gemeente_id';
+			if ($use_like == true) {
+				$query = "SELECT d.naam, g.nis, d.id, g.id FROM $tg g, $td d WHERE d.naam LIKE CONCAT('%', ?, '%') AND d.$gw = g.id";
+			} else {
+				$query = "SELECT d.naam, g.nis,d.id, g.id FROM $tg g, $td d WHERE d.naam = ? AND d.$gw = g.id";
+			}
 		} else {
-			$query = "SELECT d.naam, g.nis, p.nis, d.id, g.id, p.id FROM gemeentes g, provincies p, deelgemeentes d WHERE d.naam = ? AND g.prov_id = p.id AND d.gem_id = g.id";
+			$tg = 'gemeentes';
+			
+			$tp = 'provincies';
+			$td = 'deelgemeentes';
+			$pw = 'AND g.prov_id = p.id';
+			$gw = 'gem_id';
+			if ($use_like == true) {
+				$query = "SELECT d.naam, g.nis, p.nis, d.id, g.id, p.id FROM $tg g, $tp p, $td d WHERE d.naam LIKE CONCAT('%', ?, '%') $pw AND d.$gw = g.id";
+			} else {
+				$query = "SELECT d.naam, g.nis, p.nis, d.id, g.id, p.id FROM $tg g, $tp p, $td d WHERE d.naam = ? $pw AND d.$gw = g.id";
+			}
 		}
-		$st = $this->c->prepare ($query);
+		$nis = array ();
+		
+		$st = $this->c->prepare ($query) or die ($this->c->error);
 		$st->bind_param ('s', $deelgemeente);
 		$st->execute ();
-		$st->bind_result ($n, $g, $p, $did, $gid, $pid);
+		if ($gis == true) {
+			$st->bind_result ($n, $g, $did, $gid);
+		} else {
+			$st->bind_result ($n, $g, $p, $did, $gid, $pid);
+		}
 		while ($st->fetch ()) {
 			array_push ($nis, array ('dg' => $n, 'gem_n' => $g, 'prov_n' => $p, 'd_id' => $did, 'g_id' => $gid, 'p_id' => $pid));
 		}
 		$st->close;
 		return $nis;
+	}
+
+	/*
+	 * Function to return the following information pertaining to a particular street
+	 *	id, name, deelgemeente.id, deelgemeente.name, gemeente.id, gemeente.name
+	 * @param string $straat
+	 * @param string $use_like
+	 * @param string $gis use the gis_* tables (false)
+	 * @return array $results[] = array (id =>, n =>, did =>, dn =>, gid =>, gn =>)
+	 */
+	public function match_straat ($straat, $use_like = false, $gis = false) {
+		if ($gis == true) {
+			$tg = 'gis_gemeentes';
+			$td = 'gis_deelgemeentes';
+			$ts = 'gis_straten';
+		} else {
+			$tg = 'gemeentes';
+			$td = 'deelgemeentes';
+			$ts = 'straten';
+		}
+		$nis = array ();
+		if ($use_like == true) {
+			$query = "SELECT s.id, s.naam, g.naam, g.id, d.naam, d.id FROM $ts s, $tg g, $td d WHERE s.dg_id = d.id AND d.gemeente_id = g.id AND s.naam LIKE CONCAT('%', ?, '%')";
+		} else {
+			$query = "SELECT s.id, s.naam, g.naam, g.id, d.naam, d.id FROM $ts s, $tg g, $td d WHERE s.dg_id = d.id AND d.gemeente_id = g.id AND s.naam = ?";
+		}
+		$st = $this->c->prepare ($query);
+		$st->bind_param ('s', $straat);
+		$st->execute ();
+		$st->bind_result ($sid, $sn, $gn, $gid, $dn, $did);
+		while ($st->fetch ()) {
+			array_push ($nis, array ('id' => $sid, 'n' => $sn, 'did' => $did, 'dn' => $dn, 'gid' => $gid, 'gn' => $gn));
+		}
+		$st->close ();
+		return $nis;
+	}
+
+	/*
+	 * Function to return the following information about straten by deelgemeente_id
+	 *	id
+	 *	name
+	 *	wgs84_lat & long
+	 * @param int $dg_id
+	 * @return array $results[i] = array (id =>, name =>, wgs84_lat =>, wgs84_long =>, dg_id =>)
+	 */
+	public function straten_by_deelgemeente ($dg_id) {
+		$result = array ();
+		$query = "SELECT s.id, s.naam, s.wgs84_lat, s.wgs84_long FROM gis_straten s, gis_deelgemeentes d WHERE d.id = s.dg_id AND d.id = ?";
+		$st = $this->c->prepare ($query);
+		$st->bind_param ('d', $dg_id);
+		$st->execute ();
+		$st->bind_result ($sid, $sn, $slat, $slong);
+		while ($st->fetch ()) {
+			array_push ($result, array ('id' => $sid, 'name' => $sn, 'wgs84_lat' => $slat, 'wgs84_long' => $slong, 'dg_id' => $dg_id));
+		}
+		$st->close ();
+		return $result;
 	}
 
 	/*
