@@ -5,7 +5,12 @@ class mysql {
 	private $c;
 
 	function __construct () {
-		$this->c = new mysqli ('', '', '', '');
+		if (file_exists ('etc/config.php')) {
+			include_once ('etc/config.php');
+		} else {
+			die ("Error: configuration file not found.");
+		}
+		$this->c = new mysqli ($db['host'], $db['username'], $db['password'], $db['database']);
 	}
 
 	/*
