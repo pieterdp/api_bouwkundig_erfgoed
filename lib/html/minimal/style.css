@@ -115,7 +115,32 @@ div.body {
 	margin-bottom: 8px;
 }
 
+div.toc {
+	width: 140px;
+	margin-right: 250px;
+	float: right;
+	font-size: 0.85em;
+	text-align: left;
+	border: 1px solid #cacaca;
+}
+
 p {
+}
+
+a:link, a:visited {
+	text-decoration: underline;
+	font-family: inherit;
+	font-size: inherit;
+	color: #000000;
+	font-weight: inherit;
+}
+
+a:hover, a:active {
+	text-decoration: underline;
+	font-family: inherit;
+	font-size: inherit;
+	color: #d40000;
+	font-weight: inherit;
 }
 
 h1 {
@@ -130,7 +155,7 @@ h1 {
 h2 {
 	font-size: 1.6em;
 	color: #767676;
-	margin-bottom: -0.3em;
+	margin-bottom: 0.3em;
 	margin-left: 8px;
 }
 
@@ -158,6 +183,28 @@ h6 {
 	margin-bottom: -0.7em;
 }
 
+ol.toc {
+}
+
+span.code {
+	font-style: italic;
+	color: #363636;
+	font-size: 0.95em;
+}
+
+
+/* Special pages */
+/* Result page of gemeenteswvl.php */
+table.gem {
+}
+
+td.gem {
+	padding: 2px 2px 2px 2px;
+}
+
+th.gem {
+	padding: 2px 2px 2px 2px;
+}
 /*
 h1.fullwidth {
 	font-size: 1.8em;
