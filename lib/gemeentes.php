@@ -48,7 +48,7 @@ class glp extends nlp {
 		$ds = array ();
 		$dr = $this->m->match_deelgemeente ($dn, true, true);
 		foreach ($dr as $r) {
-			if ($gid == $r['g_id'] || $gid = null) {
+			if ($gid == $r['g_id'] || $gid == null) {
 				array_push ($ds, array ('id' => $r['d_id'], 'n' => $r['dg'], 'gid' => $r['g_id']));
 			}
 		}
@@ -65,7 +65,7 @@ class glp extends nlp {
 		$ss = array ();
 		$sr = $this->m->match_straat ($sn, true, true);
 		foreach ($sr as $r) {
-			if ($did == $r['did'] || $did = null) {
+			if ($did == $r['did'] || $did == null) {
 				array_push ($ss, array ('id' => $r['id'], 'n' => $r['n'], 'did' => $r['did'], 'dgn' => $r['dn'], 'gn' => $r['gn'], 'gid' => $r['gid']));
 			}
 		}
@@ -119,7 +119,57 @@ class glp extends nlp {
 			/* Sentece contains no 'in', only a comma */
 			$dgs = $this->gis_deelgemeente ($parts[1]);
 			foreach ($dgs as $dg) {
-				array_push ($items, array ('q' => $parts[0], 'g' => $this->m->item_by_id ('gemeentes', $dg['g_id'], 'naam'), 'dg' => $dg['n'], 's' => $this->m->straten_by_deelgemeente ($dg['id']));
+				array_push ($items, array ('q' => $parts[0], 'g' => $this->m->item_by_id ('gemeentes', $dg['g_id'], 'naam'), 'dg' => $dg['n'], 's' => $this->m->straten_by_deelgemeente ($dg['id'])));
+			}
+			return $items;
+		}
+		/* Is part[1] a straat, deelgemeente or gemeente? */
+		$rs = $this->gis_straat ($parts[1]);
+		if (count ($rs) == 0) {
+			/* No straat */
+			/* Deelgemeente */
+			$dgs = $this->gis_deelgemeente ($parts[1]);
+			if (count ($dgs) == 0) {
+				/* No deelgemeente */
+				/* Gemeente */
+				$gs = $this->gis_gemeente ($parts[1]);
+				if (count ($gs) == 0) {
+					/* Mesa give up */
+					return $items;
+				} else {
+					foreach ($gs as $g) {
+						$dgs = $this->m->deelgemeentes_by_gemeente ($g['id']);
+						foreach ($dgs as $dg) {
+							array_push ($items, array (
+								'q' => $parts[0],
+								'g' => $g['n'],
+								'dg' => $dg['name'],
+								's' => $this->m->straten_by_deelgemeente ($dg['id'])
+							));
+						}
+					}
+				}
+			} else {
+				//array_push ($ds, array ('id' => $r['d_id'], 'n' => $r['dg'], 'gid' => $r['g_id']));
+				foreach ($dgs as $dg) {
+					$g = $this->m->item_by_id ('gemeentes', $dg['g_id'], 'naam');
+					if (!isset ($parts[2]) || $parts[2] == $g) {
+						array_push ($items, array (
+							'q' => $parts[0],
+							'g' => $g,
+							'dg' => $dg['n'],
+							's' => $this->m->straten_by_deelgemeente ($dg['id'])
+						));
+					}
+				}
+			}
+		} else {
+		//array_push ($ss, array ('id' => $r['id'], 'n' => $r['n'], 'did' => $r['did'], 'dgn' => $r['dn'], 'gn' => $r['gn'], 'gid' => $r['gid']));
+			foreach ($rs as $r) {
+			/* p2 is leeg OF p2 = deelgemeente & p3 = gemeente OF p2 = gemeente OF p2 = deelgemeente*/
+				if (!isset ($parts[2]) || ($parts[2] == $r['dgn'] && $parts[3] == $r['gn']) || $parts[2] == $r['gn'] || ($parts[2] == $r['dgn'] && !isset ($parts[3]))) {
+					array_push ($items, array ('q' => $parts[0], 'g' => $r['gn'], 'dg' => $r['dgn'], 's' => $r['n']));
+				}
 			}
 		}
 		/* All other cases are like:

@@ -142,10 +142,22 @@ class mysql {
 		}
 		$nis = array ();
 		if ($use_like == true) {
-			$query = "SELECT s.id, s.naam, g.naam, g.id, d.naam, d.id FROM $ts s, $tg g, $td d WHERE s.dg_id = d.id AND d.gemeente_id = g.id AND s.naam LIKE CONCAT('%', ?, '%')";
+			$query = "SELECT s.id, s.naam, g.naam, g.id, d.naam, d.id FROM $ts s, $tg g, $td d WHERE s.dg_id = d.id AND d.gemeente_id = g.id AND s.naam LIKE CONCAT('%%', '%s', '%%')";
 		} else {
-			$query = "SELECT s.id, s.naam, g.naam, g.id, d.naam, d.id FROM $ts s, $tg g, $td d WHERE s.dg_id = d.id AND d.gemeente_id = g.id AND s.naam = ?";
+			$query = "SELECT s.id, s.naam, g.naam, g.id, d.naam, d.id FROM $ts s, $tg g, $td d WHERE s.dg_id = d.id AND d.gemeente_id = g.id AND s.naam = '%s'";
 		}
+		$query = sprintf ($query, $this->c->real_escape_string ($straat));
+		$r = $this->c->query ($query) or die ($this->c->error);
+		while ($row = $r->fetch_array ()) {
+			array_push ($nis, array (
+				'id' => $row[0],
+				'n' => $row[1],
+				'did' => $row[5],
+				'dn' => $row[4],
+				'gid' => $row[3],
+				'gn' => $row[2]));
+		}
+		/*
 		$st = $this->c->prepare ($query);
 		$st->bind_param ('s', $straat);
 		$st->execute ();
@@ -153,7 +165,7 @@ class mysql {
 		while ($st->fetch ()) {
 			array_push ($nis, array ('id' => $sid, 'n' => $sn, 'did' => $did, 'dn' => $dn, 'gid' => $gid, 'gn' => $gn));
 		}
-		$st->close ();
+		$st->close ();*/
 		return $nis;
 	}
 
@@ -174,6 +186,28 @@ class mysql {
 		$st->bind_result ($sid, $sn, $slat, $slong);
 		while ($st->fetch ()) {
 			array_push ($result, array ('id' => $sid, 'name' => $sn, 'wgs84_lat' => $slat, 'wgs84_long' => $slong, 'dg_id' => $dg_id));
+		}
+		$st->close ();
+		return $result;
+	}
+
+	/*
+	 * Function to return the following information about deelgemeentes by gemeente_id
+	 * id
+	 * name
+	 * wgs84_lat & long
+	 * @param int $g_id
+	 * return array $results[i] = array (id =>, name =>, wgs84_lat =>, wgs84_long =>, g_id =>)
+	 */
+	public function deelgemeentes_by_gemeente ($g_id) {
+		$result = array ();
+		$query = "SELECT d.id, d.naam, d.wgs84_lat, d.wgs84_long FROM gis_deelgemeentes d, gis_gemeentes g WHERE g.id = d.gemeente_id AND g.id = ?";
+		$st = $this->c->prepare ($query);
+		$st->bind_param ('d', $g_id);
+		$st->execute ();
+		$st->bind_result ($did, $dn, $dlat, $dlong);
+		while ($st->fetch ()) {
+			array_push ($result, array ('id' => $did, 'name' => $dn, 'wgs84_lat' => $dlat, 'wgs84_long' => $dlong, 'g_id' => $g_id));
 		}
 		$st->close ();
 		return $result;
