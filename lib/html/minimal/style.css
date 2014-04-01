@@ -192,6 +192,10 @@ span.code {
 	font-size: 0.95em;
 }
 
+span.back-button {
+	margin-top: 0.8em;
+	margin-bottom: 0.8em;
+}
 
 /* Special pages */
 /* Result page of gemeenteswvl.php */

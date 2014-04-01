@@ -102,6 +102,7 @@ class result_page extends skin {
                         )
 			*/
 		$wrapper = '<h1 class="result">Resultaten</h1>
+<span style="back-button"><a href="gemeenteswvl.php">&lt;&lt;&nbsp;terug</a></span>
 <p>De zoekopdracht <span class="code">%s</span> leverde %d %s op.</p>
 %s
 ';
