@@ -21,6 +21,10 @@ class glp extends nlp {
 			$dc = $m;
 			$dc['CFLAG'] = true;
 		}
+		if (count ($dc) == 0) {
+			$dc[0] = $sentence;
+			$dc[1] = $sentence;
+		}
 		return $dc;
 	}
 
@@ -119,12 +123,17 @@ class glp extends nlp {
 			/* Sentece contains no 'in', only a comma */
 			$dgs = $this->gis_deelgemeente ($parts[1]);
 			foreach ($dgs as $dg) {
-				array_push ($items, array ('q' => $parts[0], 'g' => $this->m->item_by_id ('gemeentes', $dg['g_id'], 'naam'), 'dg' => $dg['n'], 's' => $this->m->straten_by_deelgemeente ($dg['id'])));
+				array_push ($items, array ('q' => $parts[0], 'g' => $this->m->item_by_id ('gis_gemeentes', $dg['g_id'], 'naam'), 'dg' => $dg['n'], 's' => $this->m->straten_by_deelgemeente ($dg['id'])));
 			}
 			return $items;
 		}
 		/* Is part[1] a straat, deelgemeente or gemeente? */
 		$rs = $this->gis_straat ($parts[1]);
+		if (!isset ($parts[2])) {
+			/* We could be searching for a gemeente or deelgemeente */
+			$gx = $this->gis_gemeente ($parts[1]);
+			$dx = $this->gis_deelgemeente ($parts[1]);
+		}
 		if (count ($rs) == 0) {
 			/* No straat */
 			/* Deelgemeente */
@@ -150,9 +159,8 @@ class glp extends nlp {
 					}
 				}
 			} else {
-				//array_push ($ds, array ('id' => $r['d_id'], 'n' => $r['dg'], 'gid' => $r['g_id']));
 				foreach ($dgs as $dg) {
-					$g = $this->m->item_by_id ('gemeentes', $dg['g_id'], 'naam');
+					$g = $this->m->item_by_id ('gis_gemeentes', $dg['g_id'], 'naam');
 					if (!isset ($parts[2]) || $parts[2] == $g) {
 						array_push ($items, array (
 							'q' => $parts[0],
@@ -164,7 +172,6 @@ class glp extends nlp {
 				}
 			}
 		} else {
-		//array_push ($ss, array ('id' => $r['id'], 'n' => $r['n'], 'did' => $r['did'], 'dgn' => $r['dn'], 'gn' => $r['gn'], 'gid' => $r['gid']));
 			foreach ($rs as $r) {
 			/* p2 is leeg OF p2 = deelgemeente & p3 = gemeente OF p2 = gemeente OF p2 = deelgemeente*/
 				if (!isset ($parts[2]) || ($parts[2] == $r['dgn'] && $parts[3] == $r['gn']) || $parts[2] == $r['gn'] || ($parts[2] == $r['dgn'] && !isset ($parts[3]))) {
@@ -172,6 +179,75 @@ class glp extends nlp {
 				}
 			}
 		}
+		/* We might have missed deelgemeentes & gemeentes when parts[2] is undefined when some streets look like parts[1] */
+		if ((isset ($gx) && isset ($dx)) && (count ($gx) != 0 || count ($dx) != 0)) {
+			/* Compare in $dx every time the g_id to $gx - when it matches, ignore dx and use gx */
+			if (count ($gx) == 0) {
+				/* Only deelgemeentes */
+				foreach ($dx as $d) {
+					array_push ($items, array (
+						'q' => $parts[0],
+						'g' => $this->m->item_by_id ('gis_gemeentes', $d['gid'], 'naam'),
+						'dg' => $d['n'],
+						's' => $this->m->straten_by_deelgemeente ($d['id'])
+						));
+				}
+			} elseif (count ($dx) == 0) {
+				/* Only gemeentes */
+				foreach ($gx as $g) {
+					/* Fetch deelgemeentes */
+					$ds = $this->m->deelgemeentes_by_gemeente ($g['id']);
+					foreach ($ds as $dd) {
+						array_push ($items, array (
+						'q' => $parts[0],
+						'g' => $g['n'],
+						'dg' => $dd['name'],
+						's' => $this->m->straten_by_deelgemeente ($dd['id'])
+						));
+					}
+				}
+			} else {
+				/* Both */
+				/* Check whether any of the deelgemeentes has a g_id that corresponds with an id from gemeentes */
+				echo "Must be both";
+				foreach ($dx as $d) {
+					$matched = false;
+					foreach ($gx as $g) {
+						if ($d['gid'] == $g['id']) {
+							$matched = true;
+						}
+					}
+					if ($matched == false) {
+						/* No match - whole circle */
+						array_push ($items, array (
+							'q' => $parts[0],
+							'g' => $this->m->item_by_id ('gis_gemeentes', $d['gid'], 'naam'),
+							'dg' => $d['n'],
+							's' => $this->m->straten_by_deelgemeente ($d['id'])
+							));
+					}
+				}
+				foreach ($gx as $g) {
+					/*foreach ($dx as $d) {
+						if ($d['gid'] == $g['id']) {
+							$matched = true;
+						}
+					}*/
+					//if ($matched == false) {
+						$dsx = $this->m->deelgemeentes_by_gemeente ($g['id']);
+						foreach ($dsx as $dd) {
+							array_push ($items, array (
+								'q' => $parts[0],
+								'g' => $g['n'],
+								'dg' => $dd['name'],
+								's' => $this->m->straten_by_deelgemeente ($dd['id'])
+								));
+						}
+					//}
+				}
+			}
+		}
+		//print_r ($items);
 		/* All other cases are like:
 			parts[1] is straat? => lookup straat
 			YES
