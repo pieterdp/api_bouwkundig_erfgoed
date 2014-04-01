@@ -89,7 +89,7 @@ class glp extends nlp {
 			foreach ($dgs as $dg) {
 				$ss = $this->gis_straat ($p[1], $dg['id']);
 				foreach ($ss as $s) {
-					array_push ($results, array ('q' => $p[1], 'g' => $s['gn'], 'dg' => $s['dgn'], 's' => $s['n'], 'sid' => $s['id'], 'did' => $s['did'], 'gid' => $s['gid']));
+					array_push ($results, array ('q' => $p[1], 'g' => $s['gn'], 'dg' => $s['dgn'], 's' => $s['n'], 'sid' => $s['id'], 'did' => $s['did'], 'gid' => $s['gid'], 't' => 'straat'));
 				}
 			}
 		}
@@ -123,7 +123,7 @@ class glp extends nlp {
 			/* Sentece contains no 'in', only a comma */
 			$dgs = $this->gis_deelgemeente ($parts[1]);
 			foreach ($dgs as $dg) {
-				array_push ($items, array ('q' => $parts[0], 'g' => $this->m->item_by_id ('gis_gemeentes', $dg['g_id'], 'naam'), 'dg' => $dg['n'], 's' => $this->m->straten_by_deelgemeente ($dg['id'])));
+				array_push ($items, array ('q' => $parts[0], 'g' => $this->m->item_by_id ('gis_gemeentes', $dg['g_id'], 'naam'), 'dg' => $dg['n'], 's' => $this->m->straten_by_deelgemeente ($dg['id']), 't' => 'deelgemeente'));
 			}
 			return $items;
 		}
@@ -153,7 +153,8 @@ class glp extends nlp {
 								'q' => $parts[0],
 								'g' => $g['n'],
 								'dg' => $dg['name'],
-								's' => $this->m->straten_by_deelgemeente ($dg['id'])
+								's' => $this->m->straten_by_deelgemeente ($dg['id']),
+								't' => 'gemeente'
 							));
 						}
 					}
@@ -161,12 +162,13 @@ class glp extends nlp {
 			} else {
 				foreach ($dgs as $dg) {
 					$g = $this->m->item_by_id ('gis_gemeentes', $dg['g_id'], 'naam');
-					if (!isset ($parts[2]) || $parts[2] == $g) {
+					if (!isset ($parts[2]) || strcasecmp ($parts[2], $g) == 0) {
 						array_push ($items, array (
 							'q' => $parts[0],
 							'g' => $g,
 							'dg' => $dg['n'],
-							's' => $this->m->straten_by_deelgemeente ($dg['id'])
+							's' => $this->m->straten_by_deelgemeente ($dg['id']),
+							't' => 'deelgemeente'
 						));
 					}
 				}
@@ -174,8 +176,8 @@ class glp extends nlp {
 		} else {
 			foreach ($rs as $r) {
 			/* p2 is leeg OF p2 = deelgemeente & p3 = gemeente OF p2 = gemeente OF p2 = deelgemeente*/
-				if (!isset ($parts[2]) || ($parts[2] == $r['dgn'] && $parts[3] == $r['gn']) || $parts[2] == $r['gn'] || ($parts[2] == $r['dgn'] && !isset ($parts[3]))) {
-					array_push ($items, array ('q' => $parts[0], 'g' => $r['gn'], 'dg' => $r['dgn'], 's' => $r['n']));
+				if (!isset ($parts[2]) || (strcasecmp ($parts[2], $r['dgn']) == 0 && strcasecmp ($parts[3],$r['gn']) == 0) || strcasecmp ($parts[2], $r['gn']) == 0 || (strcasecmp ($parts[2], $r['dgn']) == 0 && !isset ($parts[3]))) {
+					array_push ($items, array ('q' => $parts[0], 'g' => $r['gn'], 'dg' => $r['dgn'], 's' => $r['n'], 't' => 'straat'));
 				}
 			}
 		}
@@ -189,7 +191,8 @@ class glp extends nlp {
 						'q' => $parts[0],
 						'g' => $this->m->item_by_id ('gis_gemeentes', $d['gid'], 'naam'),
 						'dg' => $d['n'],
-						's' => $this->m->straten_by_deelgemeente ($d['id'])
+						's' => $this->m->straten_by_deelgemeente ($d['id']),
+						't' => 'deelgemeente'
 						));
 				}
 			} elseif (count ($dx) == 0) {
@@ -202,14 +205,14 @@ class glp extends nlp {
 						'q' => $parts[0],
 						'g' => $g['n'],
 						'dg' => $dd['name'],
-						's' => $this->m->straten_by_deelgemeente ($dd['id'])
+						's' => $this->m->straten_by_deelgemeente ($dd['id']),
+						't' => 'gemeente'
 						));
 					}
 				}
 			} else {
 				/* Both */
 				/* Check whether any of the deelgemeentes has a g_id that corresponds with an id from gemeentes */
-				echo "Must be both";
 				foreach ($dx as $d) {
 					$matched = false;
 					foreach ($gx as $g) {
@@ -223,7 +226,8 @@ class glp extends nlp {
 							'q' => $parts[0],
 							'g' => $this->m->item_by_id ('gis_gemeentes', $d['gid'], 'naam'),
 							'dg' => $d['n'],
-							's' => $this->m->straten_by_deelgemeente ($d['id'])
+							's' => $this->m->straten_by_deelgemeente ($d['id']),
+							't' => 'deelgemeente'
 							));
 					}
 				}
@@ -240,7 +244,8 @@ class glp extends nlp {
 								'q' => $parts[0],
 								'g' => $g['n'],
 								'dg' => $dd['name'],
-								's' => $this->m->straten_by_deelgemeente ($dd['id'])
+								's' => $this->m->straten_by_deelgemeente ($dd['id']),
+								't' => 'gemeente'
 								));
 						}
 					//}

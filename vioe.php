@@ -44,7 +44,7 @@ if (isset ($_POST['submit'])) {
 	if ($_POST['type'] == 'typo') {
 		$results = $nlp->search_vioe ($query);
 		$expl = '<h1>Resultaten</h1>
-	<p>Jouw zoektocht naar "<emp>'.$query.'</emp>" leverde '.count ($results).' ';
+	<p>Jouw zoektocht naar "<span class="code">'.$query.'</span>" leverde '.count ($results).' ';
 		if (count ($results) != 1) {
 			$expl = $expl.'resultaten';
 		} else {
