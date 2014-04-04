@@ -1,13 +1,13 @@
 <?php
 
-include_once ('lib/mysql_connect.php');
+include_once ('h_apps.php');
 
 class nlp {
 
 	protected $m;
 
 	function __construct () {
-		$this->m = new mysql ();
+		$this->m = new h_apps ();
 	}
 
 	/*
@@ -84,7 +84,7 @@ class nlp {
 		/* Deelgemeente is not converted to a NIS-code */
 		$url_values = $this->parse_loc ($dc);
 		foreach ($url_values as $url_value) {
-			array_push ($urls, array (sprintf ($b_url, $url_value['prov_n'], $url_value['gem_n'], $url_value['dg'], $url_value['q']), $dc));
+			array_push ($urls, array (sprintf ($b_url, $url_value['prov_n'], $url_value['gem_n'], ucfirst ($url_value['dg']), $url_value['q']), $dc));
 		}
 		return $urls;
 	}

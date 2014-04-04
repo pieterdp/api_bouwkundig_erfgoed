@@ -1,5 +1,5 @@
 <?php
-include_once ('nlp.php');
+include_once ('lib/nlp.php');
 include_once ('lib/html_generator.php');
 
 $html = include_skin ('minimal');
