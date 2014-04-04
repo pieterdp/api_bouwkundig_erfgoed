@@ -18,6 +18,9 @@ function include_skin ($skin = null) {
 		exit (999);
 	}
 	include ($skin_path.'skin.php');
+	if (file_exists ($skin_path.'results.php')) {
+		include ($skin_path.'results.php');
+	}
 	$soop = new skin ();
 	return $soop;
 }
