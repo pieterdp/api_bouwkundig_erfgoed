@@ -17,12 +17,28 @@ function include_skin ($skin = null) {
 		die ("Error: skin file does not exist in skin directory $skin_path. Exiting.");
 		exit (999);
 	}
-	include ($skin_path.'skin.php');
 	if (file_exists ($skin_path.'results.php')) {
 		include ($skin_path.'results.php');
 	}
+	include ($skin_path.'skin.php');
 	$soop = new skin ();
 	return $soop;
+}
+
+/*
+ * Function to load an icon set
+ * This function returns the location
+ * of the icons.
+ */
+function load_icons ($iconset = null) {
+	if ($iconset == null || isset ($iconset) == false) {
+		$iconset = 'lib/html/icons/mini_icons2/';
+	}
+	if (!file_exists ($iconset)) {
+		die ("Error: icon set location does not exist in $iconset. Exiting.");
+		exit (999);
+	}
+	return $iconset;
 }
 
 ?>

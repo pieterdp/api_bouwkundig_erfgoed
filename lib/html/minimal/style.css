@@ -197,6 +197,10 @@ span.back-button {
 	margin-bottom: 0.8em;
 }
 
+img.icon {
+	height: 0.9em;
+}
+
 /* Special pages */
 /* Result page of gemeenteswvl.php */
 table.gem {
@@ -209,6 +213,77 @@ td.gem {
 th.gem {
 	padding: 2px 2px 2px 2px;
 }
+
+/* Login page */
+div.login-wrapper {
+	margin-left: auto;
+	margin-right: auto;
+	width: 350px;
+}
+
+div.login-form {
+}
+
+div#username {
+}
+
+div#password {
+}
+
+div#submit {
+}
+
+div.message {
+	font-size: 0.95em;
+	font-weight: bold;
+	margin-bottom: 15px;
+}
+div.message:hover {
+	color: #000000;
+}
+
+span.message {
+	display: block;
+	float: left;
+	margin-top: 8px;
+	margin-left: 8px;
+	color: #d40000;
+}
+
+input.login-form {
+	float: left;
+	display: block;
+	margin-left: 8px;
+	margin-right: 8px;
+	width: 105px;
+	height: 1.1em;
+	font-size: 0.9em;
+	margin-top: 8px;
+}
+
+label {
+	margin-left: 8px;
+	width: 80px;
+	margin-right: 8px;
+	display: block;
+	float: left;
+	font-size: 0.9em;
+	margin-top: 8px;
+}
+
+img.login-form {
+	display: block;
+	float: left;
+	margin-top: 8px;
+}
+
+div.submit {
+	float: right;
+	margin-top: 12px;
+	margin-right: 50px;
+}
+
+
 /*
 h1.fullwidth {
 	font-size: 1.8em;
