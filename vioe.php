@@ -9,7 +9,7 @@ $nlp = new nlp ();
 if (isset ($_GET['type']) && strtolower ($_GET['type']) == 'api') {
 	/* API - get the query from the URL & return JSON-encoded string */
 	$query = $_GET;
-	$query['type'] = 'vioe';
+	$query['db'] = 'vioe';
 	$newurl = 'http://erfgoeddb.helptux.be/api.php?'.http_build_query ($query);
 	header ('Location: '.$newurl);
 	header ('HTTP/1.0 301 Moved Permanently');
@@ -93,7 +93,7 @@ Bij het zoeken naar monumenten krijg je een lijst resultaten uit de eigen databa
 </ul>
 </p>
 <h2>Echte API</h2>
-<p>De echte API is te benaderen via <a href="index.php?type=API&amp;query=QUERY&amp;qt=TYPE" id="api">index.php?type=API&amp;query=QUERY&amp;qt=TYPE</a>, waarbij QUERY de zin is die hier in het formulier kan worden ingevuld (zie voorbeelden) en TYPE of er gezocht wordt op typologieën (<em>&amp;qt=typo</em>) of monumenten (<em>&amp;qt=mon</em>). De string moet gecodeerd zijn met <a href="http://be2.php.net/manual/en/function.urlencode.php">urlencode</a>. Output is in JSON-formaat.</p>
+<p>De echte API is te benaderen via <a href="vioe.php?type=API&amp;query=QUERY&amp;qt=TYPE" id="api">vioe.php?type=API&amp;query=QUERY&amp;qt=TYPE</a>, waarbij QUERY de zin is die hier in het formulier kan worden ingevuld (zie voorbeelden) en TYPE of er gezocht wordt op typologieën (<em>&amp;qt=typo</em>) of monumenten (<em>&amp;qt=mon</em>). De string moet gecodeerd zijn met <a href="http://be2.php.net/manual/en/function.urlencode.php">urlencode</a>. Output is in JSON-formaat.</p>
 <h2>Voorbeelden</h2>
 <ul>
 <li><strong>kerken in Ieper, Ieper</strong> &mdash; zoekt alle kerken in de deelgemeente Ieper van de hoofdgemeente Ieper</li>
