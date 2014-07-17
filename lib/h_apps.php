@@ -214,7 +214,7 @@ class h_apps extends db_connect {
 		$monument = $this->c->real_escape_string ($monument);
 		$result = array ();
 		if ($use_like == true) {
-			$query = "SELECT r.naam, r.url, a.huisnummer, a.wgs84_lat, a.wgs84_long, s.naam, d.naam, g.naam, p.naam
+			$query = "SELECT r.naam, r.url, a.huisnummer, a.wgs84_lat, a.wgs84_long, s.naam, d.naam, g.naam, p.naam, r.relict_id
 			FROM relicten r, adres a, straten s, deelgemeentes d, gemeentes g, provincies p
 			WHERE
 			%s
@@ -225,7 +225,7 @@ class h_apps extends db_connect {
 			a.prov_id = p.id AND
 			r.naam LIKE CONCAT('%%', '%s', '%%')";
 		} else {
-			$query = "SELECT r.naam, r.url, a.huisnummer, a.wgs84_lat, a.wgs84_long, s.naam, d.naam, g.naam, p.naam
+			$query = "SELECT r.naam, r.url, a.huisnummer, a.wgs84_lat, a.wgs84_long, s.naam, d.naam, g.naam, p.naam, r.relict_id
 			FROM relicten r, adres a, straten s, deelgemeentes d, gemeentes g, provincies p
 			WHERE
 			%s
@@ -264,14 +264,33 @@ class h_apps extends db_connect {
 		}
 		$r = $this->c->query ($query, MYSQLI_USE_RESULT) or die ($this->c->error);
 		while ($row = $r->fetch_array ()) {
-			array_push ($result, array ('naam' => $row[0], 'url' => $row[1], 'adres' => array (
-				'straat' => $row[5],
-				'nummer' => $row[2],
-				'deelgem' => $row[6],
-				'gem' => $row[7],
-				'prov' => $row[8],
-				'wgs84_lat' => $row[3],
-				'wgs84_long' => $row[4])));
+			$relict_id = $row[9];
+			##
+			# See bug #5
+			##
+			if (isset ($result[$relict_id])) {
+				array_push ($result[$relict_id]['adres'], array (
+					'straat' => $row[5],
+					'nummer' => $row[2],
+					'deelgem' => $row[6],
+					'gem' => $row[7],
+					'prov' => $row[8],
+					'wgs84_lat' => $row[3],
+					'wgs84_long' => $row[4]
+				));
+			} else {
+				$result[$relict_id] = array ('naam' => $row[0], 'url' => $row[1], 'adres' => array (
+					array (
+						'straat' => $row[5],
+						'nummer' => $row[2],
+						'deelgem' => $row[6],
+						'gem' => $row[7],
+						'prov' => $row[8],
+						'wgs84_lat' => $row[3],
+						'wgs84_long' => $row[4]
+						)
+				));
+			}
 		}
 		$r->free ();
 		return $result;

@@ -155,33 +155,45 @@ class result_page extends skin {
         )*/
 		$rh_base = '<h3 class="result">%s</h3>
 <table class="result" id="result_detail_%d">
-<tr class="result hidden">
-	<td class="result" id="monument_%d">%s</td>
-</tr>
-<tr class="result">
-	<td class="result" id="adres_%d"><span class="straat" id="straat_%d">%s %s</span> in <span class="deelgemeente" id="deelgemeente_%d">%s</span>, <span class="gemeente" id="gemeente_%d">%s</span> (provincie <span class="provincie" id="provincie_%d">%s</span>)</td>
-</tr>
-<tr class="result">
-	<td class="result url" id="url_%d"><a href="javascript:v_open_url (\'%s\')">[VIOE]</a></td>
-</tr>
-<tr class="result">
-	<td class="result coord" id="coord_%d">LAT: <span class="coord" id="wgs84_lat_%d">%s</span>, LONG: <span class="coord" id="wgs84_long_%d">%s</span></td>
-</tr>
+%s
 <tr class="result">
 	<td class="result map" id="maptd_%d"><div id="map_%d" class="map"></div></td>
 </tr>
 </table>';
+		$tr_base = '
+<tr class="result hidden">
+	<td class="result" id="monument_%d">%s</td>
+</tr>
+<tr class="result">
+	<td class="result" id="adres_%d_a%d"><span class="straat" id="straat_%d_a%d">%s %s</span> in <span class="deelgemeente" id="deelgemeente_%d_a%d">%s</span>, <span class="gemeente" id="gemeente_%d_a%d">%s</span> (provincie <span class="provincie" id="provincie_%d_a%d">%s</span>)</td>
+</tr>
+<tr class="result">
+	<td class="result coord" id="coord_%d_a%d">LAT: <span class="coord" id="wgs84_lat_%d_a%d">%s</span>, LONG: <span class="coord" id="wgs84_long_%d_a%d">%s</span></td>
+</tr>
+';
 		$i = 0;
 		$rh = array ();
+		/*print_r ($results);
+		exit (0);*/
 		foreach ($results as $result) {
 			$i++;
+			$rh_addr = '';
+			$j = 0;
+			foreach ($result['adres'] as $addres) {
+				$j++;
+				$rh_addr = $rh_addr.sprintf ($tr_base,
+					$i, $result['naam'],
+					$i, $j, $i, $j, $addres['straat'], $addres['nummer'], $i, $j, $addres['deelgem'], $i, $j, $addres['gem'], $i, $j, $addres['prov'],
+					$i, $j, $i, $j, $addres['wgs84_lat'], $i, $j, $addres['wgs84_long']
+				);
+			}
 			array_push ($rh, sprintf ($rh_base,
 				$result['naam'],
 				$i,
-				$i, $result['naam'],
-				$i, $i, $result['adres']['straat'], $result['adres']['nummer'], $i, $result['adres']['deelgem'], $i, $result['adres']['gem'], $i, $result['adres']['prov'],
-				$i, $result['url'],
-				$i, $i, $result['adres']['wgs84_lat'], $i, $result['adres']['wgs84_long'],
+				'<tr class=" result hidden">
+					<td class="result" id="'.$i.'_a">'.$j.'</td>
+				</tr>
+				'.$rh_addr,
 				$i, $i
 			));
 			$rh['total'] = $i;
