@@ -162,10 +162,13 @@ class result_page extends skin {
 	<td class="result" id="adres_%d"><span class="straat" id="straat_%d">%s %s</span> in <span class="deelgemeente" id="deelgemeente_%d">%s</span>, <span class="gemeente" id="gemeente_%d">%s</span> (provincie <span class="provincie" id="provincie_%d">%s</span>)</td>
 </tr>
 <tr class="result">
-	<td class="result url" id="url_%d"><a href="%s">[VIOE]</a></td>
+	<td class="result url" id="url_%d"><a href="javascript:v_open_url (\'%s\')">[VIOE]</a></td>
 </tr>
 <tr class="result">
 	<td class="result coord" id="coord_%d">LAT: <span class="coord" id="wgs84_lat_%d">%s</span>, LONG: <span class="coord" id="wgs84_long_%d">%s</span></td>
+</tr>
+<tr class="result">
+	<td class="result map" id="maptd_%d"><div id="map_%d" class="map"></div></td>
 </tr>
 </table>';
 		$i = 0;
@@ -178,8 +181,10 @@ class result_page extends skin {
 				$i, $result['naam'],
 				$i, $i, $result['adres']['straat'], $result['adres']['nummer'], $i, $result['adres']['deelgem'], $i, $result['adres']['gem'], $i, $result['adres']['prov'],
 				$i, $result['url'],
-				$i, $i, $result['adres']['wgs84_lat'], $i, $result['adres']['wgs84_long']
+				$i, $i, $result['adres']['wgs84_lat'], $i, $result['adres']['wgs84_long'],
+				$i, $i
 			));
+			$rh['total'] = $i;
 		}
 		return $rh;
 	}
@@ -197,7 +202,12 @@ class result_page extends skin {
 		$r = '';
 		$i = 0;
 		if (is_array ($results)) {
-			foreach ($results as $result) {
+			foreach ($results as $key => $result) {
+				if ($key == 'total' && is_numeric ($result) === true) { /* Ugly Hack */
+					/* Small hack to make maps work (javascript) */
+					$r = $r.'<div class="hidden" id="totalitems">'.$result.'</div>'."\n";
+					continue;
+				}
 				$i++;
 				$r = $r.'<div class="result" id="result_'.$i.'">
 	'.$result.'

@@ -13,6 +13,10 @@ div.spacer {
 	clear: both;
 }
 
+.hidden {
+	display: none;
+}
+
 /* Header */
 
 div.header {
@@ -214,6 +218,11 @@ th.gem {
 	padding: 2px 2px 2px 2px;
 }
 
+span.copy-notice {
+	font-size: xx-small;
+	font-variant: italic;
+}
+
 /* Login page */
 div.login-wrapper {
 	margin-left: auto;
@@ -283,6 +292,28 @@ div.submit {
 	margin-right: 50px;
 }
 
+label.conversion {
+	float: none;
+	width: 250px;
+	display: inline;
+}
+
+div.add_more {
+	float: right;
+	margin-right: 30px;
+}
+
+td.map {
+}
+
+div.map {
+	width: 350px;
+	height: 250px;
+}
+
+/*<tr class="result">
+	<td class="result map" id="maptd_%d"><div id="map_%d" class="map"></div></td>
+</tr>*/
 
 /*
 h1.fullwidth {

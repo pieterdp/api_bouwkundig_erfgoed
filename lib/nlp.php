@@ -22,6 +22,10 @@ class nlp {
 			$dc[2] = $m[1];
 			$dc[3] = $m[2];
 		}
+		if (empty ($dc)) {
+			$dc[0] = $sentence;
+			$dc[1] = $sentence;
+		}
 		return $dc;
 	}
 
