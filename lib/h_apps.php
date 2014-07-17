@@ -204,14 +204,149 @@ class h_apps extends db_connect {
 	}
 
 	/*
+	 * Function to fetch a monument from the db by relict_id
+	 * @param string $relict_id
+	 * @return array $monument = 'naam' => $naam, 'url' => $url, 'relict_id' => $relict_id, 'adres'[i] => array ('straat', 'nummer', 'dg', 'gem', 'prov', 'wgs84_lat', 'wgs84_long')
+	 */
+	public function get_monument_by_id ($relict_id) {
+		$monument = array (
+			'id' => array (), /* TODO: change this, there should only be one ID (dirty DB) */
+			'naam' => '',
+			'url' => '',
+			'relict_id' => '',
+			'adres' => array ()
+			);
+		/*
+		 * Fetch the monument
+		 */
+		$q = "SELECT DISTINCT r.id, r.naam, r.url, r.relict_id FROM relicten r WHERE r.relict_id = ?";
+		$st = $this->c->prepare ($q);
+		$st->bind_param ('s', $relict_id);
+		$st->execute ();
+		$st->bind_result ($id, $naam, $url, $relict_id);
+		while ($st->fetch ()) {
+			array_push ($monument['id'], $id);
+			$monument['naam'] = $naam;
+			$monument['url'] = $url;
+			$monument['relict_id'] = $relict_id;
+		}
+		$st->close ();
+		$st = null;
+		/*
+		 * Fetch the addresses
+		 */
+		foreach ($monument['id'] as $m_id) {
+			array_push ($monument['adres'], $this->get_address_by_r_id ($m_id));
+		}
+		return $monument;
+	}
+
+	/*
+	 * Function to fetch an address by relict.id (!= relict_id !)
+	 * @param int $id
+	 * @return $address[i] = array ('straat', 'nummer', 'dg', 'gem', 'prov', 'wgs84_lat', 'wgs84_long')
+	 */
+	public function get_address_by_r_id ($r_id) {
+		$address = array ();
+		$q = "SELECT DISTINCT s.naam, d.naam, g.naam, p.naam, a.huisnummer, a.wgs84_lat, a.wgs84_long, a.id FROM adres a, straten s, deelgemeentes d, gemeentes g, provincies p, link l
+		WHERE
+		a.str_id = s.id AND
+		a.gem_id = g.id AND
+		a.deelgem_id = d.id AND
+		a.prov_id = p.id AND
+		l.ID_link_a = a.id AND
+		l.ID_link_r = ?";
+		$st = $this->c->prepare ($q);
+		$st->bind_param ('s', $r_id);
+		$st->execute ();
+		$st->bind_result ($straat, $deelgemeente, $gemeente, $provincie, $huisnummer, $wgs84_lat, $wgs84_long, $a_id);
+		while ($st->fetch ()) {
+			$a = array (
+				'straat' => $straat,
+				'deelgemeente' => $deelgemeente,
+				'gemeente' => $gemeente,
+				'provincie' => $provincie,
+				'huisnummer' => $huisnummer,
+				'wgs84_lat' => $wgs84_lat,
+				'wgs84_long' => $wgs84_long,
+				'id' => $a_id
+			);
+			array_push ($address, $a);
+		}
+		$st->close ();
+		$st = null;
+		return $address;
+	}
+
+	/*
+	 * Function to fetch an address by adres.id (!= adres_id!)
+	 */
+	/*
+	 * Function to fetch a monument from the db by id
+	 */
+
+	/*
 	 * Function to return the information held in the DB about a monument
 	 * @param string $monument
 	 * @param bool $use_like
 	 * @param optional $pid, $gid, $did ids (DB) of the province etc. to query (! this works hierarchical, e.g. if deelgemeente is set, gemeente & provincie must be set!)
 	 * @return result[] = array ('naam' => $naam, 'url' => $url, 'adres' => array ('straat', 'nummer', 'dg', 'gem', 'prov', 'wgs84_lat', 'wgs84_long'))
 	 */
+	/*
+	 * Currently wrapped
+	 */
 	public function match_monument ($monument, $use_like = false, $pid = null, $gid = null, $did = null) {
+		return $this->query_relicten ($monument, 'ALL', null, $pid, $gid, $did);
+	}
+
+	/*
+	 * Replaces $this->match_monument
+	 * $did, $gid, $pid is hierarchical: $did is most specific, $gid less, $pid least => if we have did, we don't check gid or pid (etc.)
+	 */
+	public function query_relicten ($monument, $limit, $start = null, $pid = null, $gid = null, $did = null) {
+		$result = array ();
 		$monument = $this->c->real_escape_string ($monument);
+		/*
+		 * Get all relicten that correspond to this query
+		 */
+		$q = "SELECT r.id FROM relicten r, link l, adres a WHERE r.naam LIKE CONCAT ('%', ?, '%') AND l.ID_link_a = a.id AND l.ID_link_r = r.id%s";
+		if ($did) {
+			$q = sprintf ($q, "\nAND a.deelgem_id = ?");
+			$st = $this->c->prepare ($q);
+			$st->bind_param ('sd', $monument, $did);
+		} elseif ($gid) {
+			$q = sprintf ($q, "\nAND a.gem_id = ?");
+			$st = $this->c->prepare ($q);
+			$st->bind_param ('sd', $monument, $gid);
+		} elseif ($pid) {
+			$q = sprintf ($q, "\nAND a.prov_id = ?");
+			$st = $this->c->prepare ($q);
+			$st->bind_param ('sd', $monument, $pid);
+		} else {
+			$q = sprintf ($q, "");
+			$st = $this->c->prepare ($q);
+			$st->bind_param ('s', $monument);
+		}
+		$st->execute ();
+		$st->bind_result ($r_id);
+		while ($st->fetch ()) {
+		}
+		$st->close ();
+		$st = null;
+		
+		
+		 /*
+		$q = "SELECT COUNT (r.relict_id) FROM relicten r, adres a, straten s, deelgemeentes d, gemeentes g, provincies p
+			WHERE
+			%s
+			r.adres_id = a.id AND
+			a.str_id = s.id AND
+			a.gem_id = g.id AND
+			a.deelgem_id = d.id AND
+			a.prov_id = p.id AND
+			r.naam LIKE CONCAT('%%', '%s', '%%')";
+		if ($limit == 'ALL') {
+		}
 		$result = array ();
 		if ($use_like == true) {
 			$query = "SELECT r.naam, r.url, a.huisnummer, a.wgs84_lat, a.wgs84_long, s.naam, d.naam, g.naam, p.naam, r.relict_id
@@ -244,23 +379,23 @@ class h_apps extends db_connect {
 				$query = sprintf ($query, 'p.id = '.$pid.' AND g.id = '.$gid.' AND d.id = '.$did.' AND
 ', $monument);
 				/*$st = $this->c->prepare ($query);
-				$st->bind_param ('sddd', $monument, $pid, $gid, $did);*/
+				$st->bind_param ('sddd', $monument, $pid, $gid, $did);*//*
 			} elseif ($gid) {
 				$gid = $this->c->real_escape_string ($gid);
 				$query = sprintf ($query, 'p.id = '.$pid.' AND g.id = '.$gid.' AND
 ', $monument);
 				/*$st = $this->c->prepare ($query);
-				$st->bind_param ('sdd', $monument, $pid, $gid);*/
+				$st->bind_param ('sdd', $monument, $pid, $gid);*//*
 			} else {
 				$query = sprintf ($query, 'p.id = '.$pid.' AND
 ', $monument);
 				/*$st = $this->c->prepare ($query);
-				$st->bind_param ('sd', $monument, $pid);*/
+				$st->bind_param ('sd', $monument, $pid);*//*
 			}
 		} else {
 			$query = sprintf ($query, ' ', $monument);
 			/*$st = $this->c->prepare ($query);
-			$st->bind_param ('s', $monument);*/
+			$st->bind_param ('s', $monument);*//*
 		}
 		$r = $this->c->query ($query, MYSQLI_USE_RESULT) or die ($this->c->error);
 		while ($row = $r->fetch_array ()) {
