@@ -8,31 +8,11 @@ $nlp = new nlp ();
 
 if (isset ($_GET['type']) && strtolower ($_GET['type']) == 'api') {
 	/* API - get the query from the URL & return JSON-encoded string */
-	$query = urldecode ($_GET['query']);
-	if (!isset ($_GET['qt']) || $_GET['qt'] == 'typo') {
-		$results = $nlp->search_vioe ($query);
-		$json = array ('amount' => count ($results), 'results' => array ());
-		foreach ($results as $result) {
-			array_push ($json['results'], array ('query' => $query, 'url' => stripslashes ($result[0])));
-		}
-	} elseif ($_GET['qt'] == 'mon') {
-		/* API for monuments */
-		$results = $nlp->monument_vioe ($query);
-		/* Flatten */
-		$f_r = array ();
-		foreach ($results as $r) {
-			$f_r = array_merge ($f_r, $r);
-		}
-		$json = array ('amount' => count ($f_r), 'results' => array ());
-		foreach ($f_r as $result) {
-			if (defined ($result[0])) {
-				array_push ($json['results'], array ('query' => $query, 'monument' => $result[0]));
-			} else {
-				array_push ($json['results'], array ('query' => $query, 'monument' => $result));
-			}
-		}
-	}
-	echo json_encode ($json);
+	$query = $_GET;
+	$query['type'] = 'vioe';
+	$newurl = 'http://erfgoeddb.helptux.be/api.php?'.http_build_query ($query);
+	header ('Location: '.$newurl);
+	header ('HTTP/1.0 301 Moved Permanently');
 	exit (0);
 }
 
@@ -77,9 +57,11 @@ if (isset ($_POST['submit'])) {
 		} else {
 			$expl = $expl.'resultaat';
 		}
-		$expl = $expl.' op. <span style="copy-notice">(gebaseerd op data uit de Inventaris Onroerend Erfgoed)</span></p>';
-		$content = $expl.$rp->create_base_result ($rp->create_monument_result ($f_r));
-		echo $html->create_base_page ('Zoeken naar monumenten', $content);
+		$expl = $expl.' op.<br/><span style="copy-notice">(gebaseerd op data uit de Inventaris Onroerend Erfgoed)</span></p>';
+		$rx = $rp->create_monument_result ($f_r);
+		$content = $expl.$rp->create_base_result ($rx);
+		echo $html->create_base_page ('Zoeken naar monumenten', $content, '<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />', '<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+<script type="text/javascript" src="lib/html/minimal/map.js"></script>');
 	}
 } else {
 	/* Show form */

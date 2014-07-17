@@ -39,7 +39,7 @@ class h_apps extends db_connect {
 		} else {
 			$tg = 'gemeentes';
 			$tp = 'provincies';
-			$pw = 'AND g.prov_id = p.id';
+			$pw = 'AND g.provincie_id = p.id';
 			if ($use_like == true) {
 				$query = "SELECT g.nis, g.naam, p.nis, g.id, p.id FROM $tg g, $tp p WHERE g.naam LIKE CONCAT('%', ?, '%') $pw";
 			} else {
@@ -86,8 +86,8 @@ class h_apps extends db_connect {
 			
 			$tp = 'provincies';
 			$td = 'deelgemeentes';
-			$pw = 'AND g.prov_id = p.id';
-			$gw = 'gem_id';
+			$pw = 'AND g.provincie_id = p.id';
+			$gw = 'gemeente_id';
 			if ($use_like == true) {
 				$query = "SELECT d.naam, g.nis, p.nis, d.id, g.id, p.id FROM $tg g, $tp p, $td d WHERE d.naam LIKE CONCAT('%', ?, '%') $pw AND d.$gw = g.id";
 			} else {
@@ -136,7 +136,7 @@ class h_apps extends db_connect {
 			$query = "SELECT s.id, s.naam, g.naam, g.id, d.naam, d.id FROM $ts s, $tg g, $td d WHERE s.dg_id = d.id AND d.gemeente_id = g.id AND s.naam = '%s'";
 		}
 		$query = sprintf ($query, $this->c->real_escape_string ($straat));
-		$r = $this->c->query ($query) or die ($this->c->error);
+		$r = $this->c->query ($query, MYSQLI_USE_RESULT) or die ($this->c->error);
 		while ($row = $r->fetch_array ()) {
 			array_push ($nis, array (
 				'id' => $row[0],
@@ -146,6 +146,7 @@ class h_apps extends db_connect {
 				'gid' => $row[3],
 				'gn' => $row[2]));
 		}
+		$r->free ();
 		/*
 		$st = $this->c->prepare ($query);
 		$st->bind_param ('s', $straat);
@@ -196,7 +197,7 @@ class h_apps extends db_connect {
 		$st->execute ();
 		$st->bind_result ($did, $dn, $dlat, $dlong);
 		while ($st->fetch ()) {
-			array_push ($result, array ('id' => $did, 'name' => $dn, 'wgs84_lat' => $dlat, 'wgs84_long' => $dlong, 'g_id' => $g_id));
+			array_push ($result, array ('id' => $did, 'deelgemeente' => $dn, 'name' => $dn, 'wgs84_lat' => $dlat, 'wgs84_long' => $dlong, 'g_id' => $g_id));
 		}
 		$st->close ();
 		return $result;
@@ -261,7 +262,7 @@ class h_apps extends db_connect {
 			/*$st = $this->c->prepare ($query);
 			$st->bind_param ('s', $monument);*/
 		}
-		$r = $this->c->query ($query) or die ($this->c->error);
+		$r = $this->c->query ($query, MYSQLI_USE_RESULT) or die ($this->c->error);
 		while ($row = $r->fetch_array ()) {
 			array_push ($result, array ('naam' => $row[0], 'url' => $row[1], 'adres' => array (
 				'straat' => $row[5],
@@ -272,6 +273,7 @@ class h_apps extends db_connect {
 				'wgs84_lat' => $row[3],
 				'wgs84_long' => $row[4])));
 		}
+		$r->free ();
 		return $result;
 		/* For some reason, below refuses to work 
 		$st->execute ();
@@ -288,6 +290,24 @@ class h_apps extends db_connect {
 		}
 		$st->close;
 		return $result;*/
+	}
+
+	/*
+	 * Function to get all gemeentes from gis_gemeentes
+	 * @return array $gemeentes
+	 */
+	public function get_all_gemeentes () {
+		$gemeentes = array ();
+		$q = "SELECT g.id, g.naam FROM gis_gemeentes g";
+		$st = $this->c->prepare ($q);
+		$st->execute ();
+		$st->bind_result ($id, $naam);
+		while ($st->fetch ()) {
+			array_push ($gemeentes, array ('id' => $id, 'gemeente' => $naam));
+		}
+		$st->close ();
+		$st = null;
+		return $gemeentes;
 	}
 }
 ?>
