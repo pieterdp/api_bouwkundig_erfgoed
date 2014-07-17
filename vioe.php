@@ -44,12 +44,18 @@ if (isset ($_POST['submit'])) {
 		}
 		echo $html->create_base_page ('Zoeken naar monumenten', $expl.sprintf ($r_out, $rs));
 	} elseif ($_POST['type'] == 'mon') {
-		$results = $nlp->monument_vioe ($query);
+		$list_of_ids = $nlp->monument_vioe ($query);
 		/* Flatten */
 		$f_r = array ();
-		foreach ($results as $r) {
-			$f_r = array_merge ($f_r, $r);
+		foreach ($list_of_ids as $key => $r) {
+			if ($key == 'total') {
+			} else {
+				$f_r = array_merge ($f_r, $r);
+			}
 		}
+		/* Get total amount */
+		/* Divide in pages */
+		/* Show them one page at the time */
 		$expl = '<h1>Resultaten</h1>
 	<p>Jouw zoektocht naar "<emp>'.$query.'</emp>" leverde '.count ($f_r).' ';
 		if (count ($f_r) != 1) {

@@ -300,10 +300,33 @@ class h_apps extends db_connect {
 	}
 
 	/*
-	 * Replaces $this->match_monument
+	 * Returns a list of relicten with address information and all
+	 * @param $id_list (from query_relicten)
+	 * @param int $limit - amount of items to return
+	 * @param int $start = null starting element
+	 * @return $results
+	 */
+	public function list_relicten ($id_list, $limit, $start = null) {
+		$results = array ();
+		if ($start == null) {
+			$start = 0;
+		}
+		if ($limit == 'ALL') {
+			$get_list = array_slice ($id_list['ids'], $start);
+		} else {
+			$get_list = array_slice ($id_list['ids'], $start, $limit);
+		}
+		foreach ($get_list as $id) {
+			array_push ($results, $this->get_monument_by_id ($id));
+		}
+		return $results;
+	}
+
+	/*
+	 * Returns a list of IDs corresponding to a particular query.
 	 * $did, $gid, $pid is hierarchical: $did is most specific, $gid less, $pid least => if we have did, we don't check gid or pid (etc.)
 	 */
-	public function query_relicten ($monument, $limit, $start = null, $pid = null, $gid = null, $did = null) {
+	public function query_relicten ($monument, $pid = null, $gid = null, $did = null) {
 		$result = array ();
 		$monument = $this->c->real_escape_string ($monument);
 		/*
@@ -329,11 +352,15 @@ class h_apps extends db_connect {
 		}
 		$st->execute ();
 		$st->bind_result ($r_id);
+		$ids;
 		while ($st->fetch ()) {
+			array_push ($ids, $r_id);
 		}
 		$st->close ();
 		$st = null;
-		
+		$result['total'] = count ($ids);
+		$result['ids'] = $ids;
+		return $result;
 		
 		 /*
 		$q = "SELECT COUNT (r.relict_id) FROM relicten r, adres a, straten s, deelgemeentes d, gemeentes g, provincies p

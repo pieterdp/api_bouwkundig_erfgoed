@@ -96,7 +96,7 @@ class nlp {
 	/*
 	 * Function to search for a $monument
 	 * @param string $monument
-	 * @return array $items
+	 * @return array $items (with the ids of the matching monuments)
 	 */
 	public function monument_vioe ($sentence) {
 		/* Split in 1+ parts */
@@ -115,10 +115,22 @@ class nlp {
         )*/
 		$monuments = array ();
 		foreach ($qs as $q) {
-			array_push ($monuments, $this->m->match_monument ($q['q'], true, $q['pid'], $q['gid'], $q['did']));
+			array_push ($monuments, $this->m->query_relicten ($q['q'], $q['pid'], $q['gid'], $q['did']));
 		}
 		return $monuments;
 	}
+
+	/*
+	 * Function to show a defined part of the result set
+	 * @param array $ids - flat array of id's that will be parsed
+	 * @param int $limit
+	 * @param int $start (optional)
+	 */
+	public function show_page ($ids, $limit, $start = null) {
+		$monuments = $this->m->list_relicten ($ids, $limit, $start);
+		return $monuments;
+	}
+	 //* list_relicten ($id_list, $limit, $start = null)
 }
 
 ?>
