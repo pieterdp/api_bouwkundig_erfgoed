@@ -1,6 +1,7 @@
 <?php
 include_once ('lib/html_generator.php');
 include_once ('lib/gemeentes.php');
+include_once ('lib/xml_generator.php');
 
 $html = include_skin ('minimal');
 $rp = new result_page ();
@@ -15,6 +16,23 @@ if (isset ($_GET['type']) && strtolower ($_GET['type']) == 'api') {
 		array_push ($json['results'], array ('query' => $query, 'result' => $result));
 	}
 	echo json_encode ($json);
+	exit (0);
+}
+
+if (isset ($_GET['type']) && strtolower ($_GET['type']) == 'export') {
+	if (isset ($_GET['save']) && strtolower ($_GET['save']) == 'true') {
+		/* XML file */
+		$xml = new xml_generator ('as_file');
+	} else {
+		/* XML string */
+		$xml = new xml_generator ('as_string');
+		/* Generate XML export with all gemeentes in it */
+		/* Get them all */
+		$g = $glp->wvl_gis_gemeentes ();
+		/* XML */
+		$output = $xml->export_gemeentes ($g);
+		echo $output;
+	}
 	exit (0);
 }
 
@@ -63,6 +81,7 @@ De resultaten zijn in de vorm van een tabel, waarbij de resultaten zijn onderver
 </ul>
 <h2>Echte API</h2>
 <p>De echte API is te benaderen via <a href="gemeenteswvl.php?type=API&amp;query=QUERY&amp;qt=TYPE" id="api">index.php?type=API&amp;query=QUERY</a>, waarbij QUERY de zin is die hier in het formulier kan worden ingevuld (zie voorbeelden). De string moet gecodeerd zijn met <a href="http://be2.php.net/manual/en/function.urlencode.php">urlencode</a>. Output is in JSON-formaat.</p>
+<p>Er kan ook een export gemaakt worden van alle gemeentes en deelgemeentes in West-Vlaanderen. De export is in XML en kan getoond worden in de browser: <a href="gemeenteswvl.php?type=export&amp;save=false">gemeenteswvl.php?type=export&amp;save=false</a> of opgeslaan als bestand: : <a href="gemeenteswvl.php?type=export&amp;save=true">gemeenteswvl.php?type=export&amp;save=true</a>.</p>
 ';
 	echo $html->create_base_page ('Zoeken naar monumenten', $form.$expl);
 }

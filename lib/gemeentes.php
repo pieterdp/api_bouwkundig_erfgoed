@@ -264,6 +264,23 @@ class glp extends nlp {
 			*/
 		return $items;
 	}
+
+	/*
+	 * Function to return all gemeentes & deelgemeentes from gis_*
+	 * in a multidimendional array
+	 * @return array $gemeentes
+	 */
+	public function wvl_gis_gemeentes () {
+		/* Get all gemeentes */
+		$gemeentes = array ();
+		$g_base = $this->m->get_all_gemeentes ();
+		foreach ($g_base as $g) {
+			array_push ($gemeentes, array ('id' => $g['id'], 'gemeente' => $g['gemeente'], 'deelgemeentes' => $this->m->deelgemeentes_by_gemeente ($g['id'])));
+		}
+		return $gemeentes;
+		/* $this->gemeentes
+		$this->deelgemeentes_by_gemeente () */
+	}
 }
 
 ?>
