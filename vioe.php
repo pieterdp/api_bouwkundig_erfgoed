@@ -5,6 +5,8 @@ include_once ('lib/html_generator.php');
 $html = include_skin ('minimal');
 $rp = new result_page ();
 $nlp = new nlp ();
+$ids_per_page = 10;
+
 
 if (isset ($_GET['type']) && strtolower ($_GET['type']) == 'api') {
 	/* API - get the query from the URL & return JSON-encoded string */
@@ -48,23 +50,33 @@ if (isset ($_POST['submit'])) {
 		/* Flatten */
 		$f_r = array ();
 		foreach ($list_of_ids as $key => $r) {
-			if ($key == 'total') {
-			} else {
+			if ($key != 'total') {
 				$f_r = array_merge ($f_r, $r);
 			}
 		}
 		/* Get total amount */
+		$total = count ($list_of_ids);
+		/* Get offset */
+		$offset;
+		if (!isset $_GET['page']) {
+			/* offset = 0 */
+			$offset = 0;
+		} else {
+			$offset = $_GET['page'] * $ids_per_page - 1; /* Arrays start at 0 */
+		}
 		/* Divide in pages */
+		$amount_of_pages = $list_of_ids / $ids_per_page;
 		/* Show them one page at the time */
+		$current_relicts = $nlp->show_page ($list_of_ids, $ids_per_page, $offset);
 		$expl = '<h1>Resultaten</h1>
-	<p>Jouw zoektocht naar "<emp>'.$query.'</emp>" leverde '.count ($f_r).' ';
+	<p>Jouw zoektocht naar "<emp>'.$query.'</emp>" leverde '.$total.' ';
 		if (count ($f_r) != 1) {
 			$expl = $expl.'resultaten';
 		} else {
 			$expl = $expl.'resultaat';
 		}
 		$expl = $expl.' op.<br/><span style="copy-notice">(gebaseerd op data uit de Inventaris Onroerend Erfgoed)</span></p>';
-		$rx = $rp->create_monument_result ($f_r);
+		$rx = $rp->create_monument_result ($current_relicts);
 		$content = $expl.$rp->create_base_result ($rx);
 		echo $html->create_base_page ('Zoeken naar monumenten', $content, '<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />', '<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
 <script type="text/javascript" src="lib/html/minimal/map.js"></script>');

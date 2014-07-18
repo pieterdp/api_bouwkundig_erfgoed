@@ -296,7 +296,9 @@ class h_apps extends db_connect {
 	 * Currently wrapped
 	 */
 	public function match_monument ($monument, $use_like = false, $pid = null, $gid = null, $did = null) {
-		return $this->query_relicten ($monument, 'ALL', null, $pid, $gid, $did);
+		$ids = $this->query_relicten ($monument, 'ALL', null, $pid, $gid, $did);
+		$results = $this->list_relicten ($ids, 'ALL');
+		return $results;
 	}
 
 	/*
