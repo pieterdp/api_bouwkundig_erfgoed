@@ -9,7 +9,7 @@ class h_apps extends db_connect {
 	 * @param int $id
 	 * @param string $cn column to be returned
 	 */
-	public function item_by_id ($table, $id, $cn) {
+	protected function item_by_id ($table, $id, $cn) {
 		$query = "SELECT $cn FROM $table t WHERE t.id = ?";
 		$st = $this->c->prepare ($query) or die ($this->c->error);
 		$st->bind_param ('d', $id);
@@ -20,6 +20,39 @@ class h_apps extends db_connect {
 		return $r;
 	}
 
+	/*
+	 * Function to eliminate duplicates in result sets of monumenten
+	 * @param string $key - key on which to sort
+	 * @param array $input[x] = array (y)
+	 * @return array $output[$key] = array (y)
+	 */
+	protected function eliminate_duplicates_monuments ($key, $input) {
+		$output = array ();
+		$i = 0;
+		foreach ($input as $k => $array) {
+			$i++;
+			if (isset ($output[$array[$key]])) {
+				##
+				# Item exists - compare
+				# (but ignore 'id', as those are supposed to be different!)
+				##
+				foreach ($array as $kk => $vv) {
+					if ($vv != $output[$array[$key]][$kk] && $kk != 'id') {
+						/* Also works for arrays - see http://be2.php.net/manual/en/language.operators.array.php */
+						##
+						# They are not identical
+						##
+						$output[$array[$key].'-'.$i] = $array;
+						break;
+					}
+				}
+			} else {
+				$output[$array[$key]] = $array;
+			}
+		}
+		return $output;
+	}
+	
 	/*
 	 * Function to return the nis code(s) of a certain gemeente, without extra identifiers (e.g. provincie)
 	 * @param string $gemeente
@@ -243,9 +276,47 @@ class h_apps extends db_connect {
 	}
 
 	/*
+	 * Function to fetch an address by relict.relict_id
+	 * @param string $relict_id
+	 * @return array $address[i] = array ('straat', 'nummer', 'deelgemeente', 'gemeente', 'provincie', 'wgs84_lat', 'wgs84_long')
+	 */
+	public function get_address_by_relict_id ($relict_id) {
+		$address = array ();
+		$q = "SELECT DISTINCT s.naam, d.naam, g.naam, p.naam, a.huisnummer, a.wgs84_lat, a.wgs84_long, a.id FROM adres a, straten s, deelgemeentes d, gemeentes g, provincies p, link l, relicten r
+		WHERE
+		a.str_id = s.id AND
+		a.gem_id = g.id AND
+		a.deelgem_id = d.id AND
+		a.prov_id = p.id AND
+		l.ID_link_a = a.id AND
+		l.ID_link_r = r.id AND
+		r.relict_id = ?";
+		$st = $this->c->prepare ($q);
+		$st->bind_param ('s', $relict_id);
+		$st->execute ();
+		$st->bind_result ($straat, $deelgemeente, $gemeente, $provincie, $huisnummer, $wgs84_lat, $wgs84_long, $a_id);
+		while ($st->fetch ()) {
+			$a = array (
+				'straat' => $straat,
+				'deelgemeente' => $deelgemeente,
+				'gemeente' => $gemeente,
+				'provincie' => $provincie,
+				'huisnummer' => $huisnummer,
+				'wgs84_lat' => $wgs84_lat,
+				'wgs84_long' => $wgs84_long,
+				'id' => $a_id
+			);
+			array_push ($address, $a);
+		}
+		$st->close ();
+		$st = null;
+		return $address;
+	}
+	
+	/*
 	 * Function to fetch an address by relict.id (!= relict_id !)
 	 * @param int $id
-	 * @return $address[i] = array ('straat', 'nummer', 'dg', 'gem', 'prov', 'wgs84_lat', 'wgs84_long')
+	 * @return $address[i] = array ('straat', 'nummer', 'deelgemeente', 'gemeente', 'provincie', 'wgs84_lat', 'wgs84_long')
 	 */
 	public function get_address_by_r_id ($r_id) {
 		$address = array ();
@@ -315,9 +386,10 @@ class h_apps extends db_connect {
 		/*
 		 * Fetch the addresses
 		 */
-		foreach ($monument['id'] as $m_id) {
+		/*foreach ($monument['id'] as $m_id) {
 			$monument['adres'] = $this->get_address_by_r_id ($m_id);
-		}
+		}  ## It should search for the addresses by relict_id; otherwise it will find only one address for a certain id (dirty tables) */
+		$monument['adres'] = $this->get_address_by_relict_id ($monument['relict_id']);
 		return $monument;
 	}
 
@@ -335,6 +407,8 @@ class h_apps extends db_connect {
 		$ids = $this->query_relicten ($monument, $pid, $gid, $did);
 	//	print_r ($ids);
 		$results = $this->list_relicten ($ids, 'ALL');
+		/* Eliminate duplicates */
+		$results = $this->eliminate_duplicates_monuments ('relict_id', $results);
 	//	print_r ($results);
 	//	exit (0);
 		return $results;
