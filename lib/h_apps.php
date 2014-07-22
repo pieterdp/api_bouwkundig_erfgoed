@@ -208,7 +208,7 @@ class h_apps extends db_connect {
 	 * @param string $relict_id
 	 * @return array $monument = 'naam' => $naam, 'url' => $url, 'relict_id' => $relict_id, 'adres'[i] => array ('straat', 'nummer', 'dg', 'gem', 'prov', 'wgs84_lat', 'wgs84_long')
 	 */
-	public function get_monument_by_id ($relict_id) {
+	public function get_monument_by_r_id ($relict_id) {
 		$monument = array (
 			'id' => array (), /* TODO: change this, there should only be one ID (dirty DB) */
 			'naam' => '',
@@ -236,7 +236,7 @@ class h_apps extends db_connect {
 		 * Fetch the addresses
 		 */
 		foreach ($monument['id'] as $m_id) {
-			array_push ($monument['adres'], $this->get_address_by_r_id ($m_id));
+			$monument['adres'] = $this->get_address_by_r_id ($m_id);
 		}
 		return $monument;
 	}
@@ -283,7 +283,42 @@ class h_apps extends db_connect {
 	 */
 	/*
 	 * Function to fetch a monument from the db by id
+	
+	 * @param string $id
+	 * @return array $monument = 'naam' => $naam, 'url' => $url, 'relict_id' => $relict_id, 'adres'[i] => array ('straat', 'nummer', 'dg', 'gem', 'prov', 'wgs84_lat', 'wgs84_long')
 	 */
+	public function get_monument_by_id ($id) {
+		$monument = array (
+			'id' => array (), /* TODO: change this, there should only be one ID (dirty DB) */
+			'naam' => '',
+			'url' => '',
+			'relict_id' => '',
+			'adres' => array ()
+			);
+		/*
+		 * Fetch the monument
+		 */
+		$q = "SELECT DISTINCT r.id, r.naam, r.url, r.relict_id FROM relicten r WHERE r.id = ?";
+		$st = $this->c->prepare ($q);
+		$st->bind_param ('s', $id);
+		$st->execute ();
+		$st->bind_result ($id, $naam, $url, $relict_id);
+		while ($st->fetch ()) {
+			array_push ($monument['id'], $id);
+			$monument['naam'] = $naam;
+			$monument['url'] = $url;
+			$monument['relict_id'] = $relict_id;
+		}
+		$st->close ();
+		$st = null;
+		/*
+		 * Fetch the addresses
+		 */
+		foreach ($monument['id'] as $m_id) {
+			$monument['adres'] = $this->get_address_by_r_id ($m_id);
+		}
+		return $monument;
+	}
 
 	/*
 	 * Function to return the information held in the DB about a monument
@@ -296,20 +331,48 @@ class h_apps extends db_connect {
 	 * Currently wrapped
 	 */
 	public function match_monument ($monument, $use_like = false, $pid = null, $gid = null, $did = null) {
-		return $this->query_relicten ($monument, 'ALL', null, $pid, $gid, $did);
+		$ids = $this->query_relicten ($monument, $pid, $gid, $did);
+	//	print_r ($ids);
+		$results = $this->list_relicten ($ids, 'ALL');
+	//	print_r ($results);
+	//	exit (0);
+		return $results;
 	}
 
 	/*
-	 * Replaces $this->match_monument
+	 * Returns a list of relicten with address information and all
+	 * @param $id_list (from query_relicten)
+	 * @param int $limit - amount of items to return
+	 * @param int $start = null starting element
+	 * @return $results
+	 */
+	public function list_relicten ($id_list, $limit, $start = null) {
+		$results = array ();
+		if ($start == null) {
+			$start = 0;
+		}
+		if ($limit == 'ALL') {
+			$get_list = array_slice ($id_list['ids'], $start);
+		} else {
+			$get_list = array_slice ($id_list['ids'], $start, $limit);
+		}
+		foreach ($get_list as $id) {
+			array_push ($results, $this->get_monument_by_id ($id));
+		}
+		return $results;
+	}
+
+	/*
+	 * Returns a list of IDs corresponding to a particular query.
 	 * $did, $gid, $pid is hierarchical: $did is most specific, $gid less, $pid least => if we have did, we don't check gid or pid (etc.)
 	 */
-	public function query_relicten ($monument, $limit, $start = null, $pid = null, $gid = null, $did = null) {
+	public function query_relicten ($monument, $pid = null, $gid = null, $did = null) {
 		$result = array ();
 		$monument = $this->c->real_escape_string ($monument);
 		/*
 		 * Get all relicten that correspond to this query
 		 */
-		$q = "SELECT r.id FROM relicten r, link l, adres a WHERE r.naam LIKE CONCAT ('%', ?, '%') AND l.ID_link_a = a.id AND l.ID_link_r = r.id%s";
+		$q = "SELECT r.id FROM relicten r, link l, adres a WHERE r.naam LIKE CONCAT ('%%', ?, '%%') AND l.ID_link_a = a.id AND l.ID_link_r = r.id%s";
 		if ($did) {
 			$q = sprintf ($q, "\nAND a.deelgem_id = ?");
 			$st = $this->c->prepare ($q);
@@ -329,11 +392,15 @@ class h_apps extends db_connect {
 		}
 		$st->execute ();
 		$st->bind_result ($r_id);
+		$ids = array ();
 		while ($st->fetch ()) {
+			array_push ($ids, $r_id);
 		}
 		$st->close ();
 		$st = null;
-		
+		$result['total'] = count ($ids);
+		$result['ids'] = $ids;
+		return $result;
 		
 		 /*
 		$q = "SELECT COUNT (r.relict_id) FROM relicten r, adres a, straten s, deelgemeentes d, gemeentes g, provincies p
