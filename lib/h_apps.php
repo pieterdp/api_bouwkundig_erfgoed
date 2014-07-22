@@ -1,5 +1,6 @@
 <?php
 include_once ('mysql_connect.php');
+/**/
 
 class h_apps extends db_connect {
 	/*
