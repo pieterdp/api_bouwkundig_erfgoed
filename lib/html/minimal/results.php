@@ -181,7 +181,7 @@ class result_page extends skin {
 				$j++;
 				$rh_addr = $rh_addr.sprintf ($tr_base,
 					$i, $result['naam'],
-					$i, $j, $i, $j, $addres['straat'], $addres['nummer'], $i, $j, $addres['deelgemeente'], $i, $j, $addres['gemeente'], $i, $j, $addres['provincie'],
+					$i, $j, $i, $j, $addres['straat'], $addres['huisnummer'], $i, $j, $addres['deelgemeente'], $i, $j, $addres['gemeente'], $i, $j, $addres['provincie'],
 					$i, $j, $i, $j, $addres['wgs84_lat'], $i, $j, $addres['wgs84_long']
 				);
 			}
