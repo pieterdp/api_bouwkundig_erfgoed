@@ -76,6 +76,12 @@ class xml_edm extends xml_base {
 				)
 		 * )
 		 */
+		 $m_node;
+		 $p_node;
+		 $g_node;
+		 $dg_node;
+		 $s_node;
+		 $h_node;
 	}
 
 	/*
