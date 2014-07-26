@@ -13,7 +13,7 @@ class xml_edm extends xml_base {
 
 	function __construct ($lang = null) {
 		parent::__construct ($lang);
-		$this->dom->appendChild ($this->dom->createProcessingInstruction ('xml-model', 'href="EDM.xsd" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"')); /* Add xml-model */
+		$this->dom->appendChild ($this->dom->createProcessingInstruction ('xml-model', 'href="http://www.europeana.eu/schemas/edm/EDM.xsd" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"')); /* Add xml-model */
 		$this->wrapper = $this->dom->createElementNS ('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf:RDF');
 		$this->dom->appendChild ($this->wrapper);
 		//$this->u = new uri_search ();
