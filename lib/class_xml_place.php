@@ -1,6 +1,6 @@
 <?php
 include_once ('class_xml_base.php');
-include_once ('class_uri_search.php');
+//include_once ('class_uri_search.php');
 /*
  * Creates a EDM:Place XML result from a DB place (consisting of any combination of provincie, gemeente, deelgemeente, straat, huisnummer, monument
  * We use EDM:Place 'cause it can be used within Europeana
@@ -15,7 +15,8 @@ class xml_edm extends xml_base {
 		parent::__construct ($lang);
 		$this->dom->appendChild ($this->dom->createProcessingInstruction ('xml-model', 'href="EDM.xsd" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"')); /* Add xml-model */
 		$this->wrapper = $this->dom->createElementNS ('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf:RDF');
-		$this->u = new uri_search ();
+		$this->dom->appendChild ($this->wrapper);
+		//$this->u = new uri_search ();
 		/*<rdf:RDF xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://www.w3.org/1999/02/22-rdf-syntax-ns# EDM-INTERNAL.xsd"
  xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -35,7 +36,6 @@ class xml_edm extends xml_base {
 	 * @return string $xml_response
 	 */
 	public function create_xml_response () {
-		$this->dom->appendChild ($this->wrapper);
 		return $this->dom->saveXML ();
 	}
 

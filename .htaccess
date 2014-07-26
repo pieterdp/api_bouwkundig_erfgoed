@@ -1,0 +1,3 @@
+Options +FollowSymlinks
+RewriteEngine on
+RewriteRule ^uri/place/([0-9]+)/?$	uri_place.php?id=$1

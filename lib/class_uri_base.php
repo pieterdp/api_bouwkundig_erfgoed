@@ -4,8 +4,32 @@ require_once ('mysql_connect.php');
 
 class uri_base extends db_connect {
 
+	protected $parent_relation; /* Assoc array with key $table_name (e.g. provincies) and value $name_of_foreign_key_referring_to_table_in_children (e.g. provincie_id) */
+
 	function __construct () {
 		parent::__construct ();
+		$this->parent_relation = array (
+			'provincies' => array (
+							'provincie_id',
+							'gemeentes'
+							),
+			'gemeentes' => array (
+							'gemeente_id',
+							'deelgemeentes'
+							),
+			'deelgemeentes' => array (
+							'dg_id',
+							'straten'
+							),
+			'straten' => array (
+							'str_id',
+							'huisnummers'
+							),
+			'huisnummers' => array (
+							'huisnummer_id',
+							'adres'
+							)
+		);
 	}
 
 	/* URI table */
