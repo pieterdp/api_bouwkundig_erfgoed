@@ -7,7 +7,7 @@ class uri_place extends uri_base {
 
 	function __construct () {
 		parent::__construct ();
-		$this->tables = array ('provincies', 'gemeentes', 'deelgemeentes', 'straten', 'huisnummers', 'relicten');
+		$this->tables = array ('provincies', 'gemeentes', 'deelgemeentes', 'straten', 'huisnummers', 'relicten', 'adres');
 	}
 
 	/*
@@ -149,6 +149,7 @@ class uri_place extends uri_base {
 		$st->bind_param ('s', $straat['id']);
 		$st->execute ();
 		$st->bind_result ($child);
+		$st->store_result ();
 		while ($st->fetch ()) {
 			array_push ($children, $this->translate_id_to_uri_id ($child, 'huisnummers'));
 		}
@@ -167,6 +168,7 @@ class uri_place extends uri_base {
 		$st->bind_param ('s', $straat['id']);
 		$st->execute ();
 		$st->bind_result ($child);
+		$st->store_result ();
 		while ($st->fetch ()) {
 			array_push ($children, $this>translate_id_to_uri_id ($child, 'relicten'));
 		}
@@ -185,7 +187,96 @@ class uri_place extends uri_base {
 	 * Function to fetch a huisnummer with children (see above)
 	 */
 	public function fetch_huisnummers ($huisnummer_id) {
-		return $this->boilerplate_fetch_place_with_children ('huisnummers', $huisnummer_id);
+		$children = array ();
+		/* Huisnummer */
+		$huisnummer = $this->get_item_by_id ('huisnummers', $huisnummer_id);
+		$q = "SELECT r.id as relict FROM relicten r, link l, adres a, huisnummers h WHERE
+		r.id = l.ID_link_r AND
+		a.id = l.ID_link_a AND
+		a.huisnummer_id = h.id AND
+		h.id = ?";
+		$st = $this->c->prepare ($q) or die ($this->c->error);
+		$st->bind_param ('s', $huisnummer['id']);
+		$st->execute ();
+		$st->bind_result ($child);
+		$st->store_result ();
+		while ($st->fetch ()) {
+			array_push ($children, $this->translate_id_to_uri_id ($child, 'relicten'));
+		}
+		$st->close ();
+		$st = null;
+		return array (
+			'id' => $huisnummer['id'],
+			'naam' => $huisnummer['naam'],
+			'wgs84_lat' => $huisnummer['wgs84_lat'],
+			'wgs84_long' => $huisnummer['wgs84_long'],
+			'children' => $children
+			
+		);
+	}
+	/*
+	 * Function to fetch a monument with children
+	 */
+	public function fetch_relicten ($relict_id) {
+		$children = array ();
+		/* Relict */
+		$relict = $this->get_item_by_id ('relicten', $relict_id);
+		/* Relict with address as children */
+		$q = "SELECT a.id as child FROM relicten r, adres a, link l WHERE
+		r.id = l.ID_link_r AND
+		a.id = l.ID_link_r AND
+		r.id = ?";
+		$st = $this->c->prepare ($q) or die ($this->c->error);
+		$st->bind_param ('s', $relict['id']);
+		$st->execute ();
+		$st->bind_result ($child);
+		$st->store_result ();
+		while ($st->fetch ()) {
+			array_push ($children, $this->translate_id_to_uri_id ($child, 'adres'));
+		}
+		$st->close ();
+		$st = null;
+		return array (
+			'id' => $relict['id'],
+			'naam' => $relict['naam'],
+			'alt_naam' => $relict['alt_naam'],
+			'wgs84_lat' => $relict['wgs84_lat'],
+			'wgs84_long' => $relict['wgs84_long'],
+			'children' => $children
+			
+		);
+	}
+	/*
+	 * Function fetch an address
+	 * Address implements parent but not children
+	 */
+	public function fetch_adres ($adres_id) {
+		$parents = array ();
+		/* Adres */
+		$adres = $this->get_item_by_id ('adres', $adres_id);
+		/* Adres with relict as parent */
+		/* To be replaced by something better */
+		$q = "SELECT r.id as parent FROM relicten r, adres a, link l WHERE
+		r.id = l.ID_link_r AND
+		a.id = l.ID_link_r AND
+		a.id = ?";
+		$st = $this->c->prepare ($q) or die ($this->c->error);
+		$st->bind_param ('s', $adres['id']);
+		$st->execute ();
+		$st->bind_result ($parent);
+		$st->store_result ();
+		while ($st->fetch ()) {
+			array_push ($parents, $this->translate_id_to_uri_id ($parent, 'relicten'));
+		}
+		$st->close ();
+		$st = null;
+		return array (
+			'id' => $adres['id'],
+			'wgs84_lat' => $adres['wgs84_lat'],
+			'wgs84_long' => $adres['wgs84_long'],
+			'parents' => $parents
+			
+		);
 	}
 }
 

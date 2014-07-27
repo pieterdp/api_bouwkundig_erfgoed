@@ -1,5 +1,7 @@
 <?php
 include_once ('class_xml_base.php');
+
+/*http://www.geonames.org/ontology/documentation.html*/
 //include_once ('class_uri_search.php');
 /*
  * Creates a EDM:Place XML result from a DB place (consisting of any combination of provincie, gemeente, deelgemeente, straat, huisnummer, monument
@@ -103,11 +105,10 @@ class xml_edm extends xml_base {
 		/* Labels & note (SKOS) */
 		$preflabel = $this->dom->createElementNS ('http://www.w3.org/2004/02/skos/core#', 'skos:prefLabel', $name);
 		$preflabel->appendChild ($xml_lang);
-		$note = $this->dom->createElementNS ('http://www.w3.org/2004/02/skos/core#', 'skos:note', $type);
-		$note->appendChild ($xml_lang);
+		/*$note = $this->dom->createElementNS ('http://www.w3.org/2004/02/skos/core#', 'skos:note', $type);
+		$note->appendChild ($xml_lang);*/
 		/* Tie it together */
 		$placenode->appendChild ($preflabel);
-		$placenode->appendChild ($note);
 		return $placenode;
 	}
 
@@ -193,6 +194,27 @@ class xml_edm extends xml_base {
 		$skos_altlabel = $this->dom->createElementNS ('http://www.w3.org/2004/02/skos/core#', 'skos:altLabel', $alt_label);
 		$skos_altlabel->appendChild ($xml_lang);
 		$node->appendChild ($skos_altlabel);
+		return $node;
+	}
+
+	/*
+	 * Function to add the type of the item
+	 * Uses the AAT-webservice for a controlled vocabulary
+	 * XML is like this: <dc:type rdf:resource=foo>bar</dc:type>
+	 * @param DOMEl $node
+	 * @param string $type (corresponding with the ID of the term at the AAT)
+	 * @param optional string $lang
+	 * @return DOMEl $node
+	 */
+	public function dc_type ($node, $type, $lang = null) {
+		$xml_lang = ($lang != null) ? $this->create_xml_lang ($lang) : $this->xml_lang;
+		$type_string = $this->get_skos_aat ($type, 'skos:prefLabel', 'nl-NL');
+		$dc_type = $this->dom->createElementNS ('http://purl.org/dc/elements/1.1/', 'dc:type', $type_string->value);
+		$rdf_resource = $this->dom->createAttributeNS ('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf:resource');
+		$rdf_resource->value = 'http://service.aat-ned.nl/skos/'.$type;
+		$dc_type->appendChild ($xml_lang);
+		$dc_type->appendChild ($rdf_resource);
+		$node->appendChild ($dc_type);
 		return $node;
 	}
 }

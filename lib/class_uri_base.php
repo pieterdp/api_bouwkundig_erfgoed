@@ -35,7 +35,8 @@ class uri_base extends db_connect {
 	/* URI table */
 	public function create_uri_table_places () {
 		$q_t = "SELECT DISTINCT id FROM %s";
-		$tablenames = array ('provincies', 'gemeentes', 'deelgemeentes', 'straten', 'huisnummers', 'relicten');
+		//$tablenames = array ('provincies', 'gemeentes', 'deelgemeentes', 'straten', 'huisnummers', 'relicten', 'adres');
+		$tablenames = array ('provincies', 'gemeentes', 'deelgemeentes', 'straten', 'huisnummers', 'relicten', 'adres');
 		$this->c->autocommit (false);
 		$this->c->begin_transaction ();
 		foreach ($tablenames as $tablename) {
