@@ -1,5 +1,6 @@
 <?php
 include_once ('class_xml_base.php');
+include_once ('class_uri_place.php');
 
 /*http://www.geonames.org/ontology/documentation.html*/
 //include_once ('class_uri_search.php');
@@ -12,13 +13,40 @@ class xml_edm extends xml_base {
 
 	protected $wrapper; /* rdf:RDF wrapper around all edm:Place entities */
 	protected $u; /* class $uri search object */
+	protected $aat_link = array ();
+	protected $uri_link = array ();
 
 	function __construct ($lang = null) {
 		parent::__construct ($lang);
 		$this->dom->appendChild ($this->dom->createProcessingInstruction ('xml-model', 'href="http://www.europeana.eu/schemas/edm/EDM.xsd" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"')); /* Add xml-model */
 		$this->wrapper = $this->dom->createElementNS ('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf:RDF');
 		$this->dom->appendChild ($this->wrapper);
-		//$this->u = new uri_search ();
+		$this->u = new uri_place ();
+		$this->aat_link = array (
+			'provincies' => 300000774,
+			'gemeentes' => 300265612,
+			'deelgemeentes' => 300000778,
+			'straten' => 300008247,
+			'relicten' => 300006958,
+			'adres' => 300248479,
+			'huisnummers' => 300194307,
+			'provincie' => 300000774,
+			'gemeente' => 300265612,
+			'deelgemeente' => 300000778,
+			'straat' => 300008247,
+			'relict' => 300006958,
+			'adres' => 300248479,
+			'huisnummer' => 300194307
+		);
+		$this->uri_link = array (
+			'provincie' => 'provincies',
+			'gemeente' => 'gemeentes',
+			'deelgemeente' => 'deelgemeentes',
+			'straat' => 'straten',
+			'relict' => 'relicten',
+			'adres' => 'adres',
+			'huisnummer' => 'huisnummers'
+		);
 		/*<rdf:RDF xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://www.w3.org/1999/02/22-rdf-syntax-ns# EDM-INTERNAL.xsd"
  xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -58,6 +86,7 @@ class xml_edm extends xml_base {
 	 * @return DOMEl $monument_node
 	 */
 	public function parse_place_as_xml ($monument, $lang = null) {
+		$uri_base = 'http://erfgoeddb.helptux.be/uri/place/';
 		/* Structure of $monument 
 		 * monument = array (
 		 		id => array ()
@@ -74,16 +103,32 @@ class xml_edm extends xml_base {
 						wgs84_lat => string
 						wgs84_long => string
 						id => string
+						provincie_id
+						gemeente_id
+						deelgemeente_id
+						straat_id
+						huisnummer_id
 					) ...
 				)
 		 * )
-		 */
-		 $m_node;
-		 $p_node;
-		 $g_node;
-		 $dg_node;
-		 $s_node;
-		 $h_node;
+		 *//*translate_id_to_uri_id ($entity_id, $entity_type)*/
+		$m_node = $this->create_place_node ($monument['naam'], 'relicten', $uri_base.$this->u->translate_id_to_uri_id ($monument['id'][0], 'relicten'));
+		$m_node->appendChild (
+			$this->dom->createElementNS ('http://purl.org/dc/elements/1.1/', 'dc:identifier', $monument['id'][0])
+		);
+		$adres_parts = array ('straat', 'deelgemeente', 'gemeente', 'provincie', 'huisnummer');
+		foreach ($monument['adres'] as $adres) {
+			$a_node = $this->dom->createElementNS ('http://purl.org/dc/terms/', 'dcterms:spatial');
+			foreach ($adres_parts as $adres_part) {
+				$ap_node = $this->create_place_node ($adres[$adres_part], $this->uri_link[$adres_part], $uri_base.$this->u->translate_id_to_uri_id ($adres[$adres_part.'_id'], $this->uri_link[$adres_part]));
+				$a_node->appendChild ($ap_node);
+			}
+			/* Geolocation */
+			$a_node = $this->add_geo_to_node ($a_node, $adres['wgs84_lat'], $adres['wgs84_long']);
+			$m_node->appendChild ($a_node);
+		}
+		return $m_node;
+		
 	}
 
 	/*
@@ -109,6 +154,7 @@ class xml_edm extends xml_base {
 		$note->appendChild ($xml_lang);*/
 		/* Tie it together */
 		$placenode->appendChild ($preflabel);
+		$placenode = $this->dc_type ($placenode, $this->aat_link[$type], $lang, $type);
 		return $placenode;
 	}
 
@@ -206,12 +252,15 @@ class xml_edm extends xml_base {
 	 * @param optional string $lang
 	 * @return DOMEl $node
 	 */
-	public function dc_type ($node, $type, $lang = null) {
+	public function dc_type ($node, $type_link, $lang = null, $type_name = null) {
 		$xml_lang = ($lang != null) ? $this->create_xml_lang ($lang) : $this->xml_lang;
-		$type_string = $this->get_skos_aat ($type, 'skos:prefLabel', 'nl-NL');
-		$dc_type = $this->dom->createElementNS ('http://purl.org/dc/elements/1.1/', 'dc:type', $type_string->value);
+		if ($type_name == null) {
+			$type_string = $this->get_skos_aat ($type, 'skos:prefLabel', 'nl-NL');
+			$type_name = $type_string->value;
+		}
+		$dc_type = $this->dom->createElementNS ('http://purl.org/dc/elements/1.1/', 'dc:type', $type_name);
 		$rdf_resource = $this->dom->createAttributeNS ('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf:resource');
-		$rdf_resource->value = 'http://service.aat-ned.nl/skos/'.$type;
+		$rdf_resource->value = 'http://service.aat-ned.nl/skos/'.$type_link;
 		$dc_type->appendChild ($xml_lang);
 		$dc_type->appendChild ($rdf_resource);
 		$node->appendChild ($dc_type);

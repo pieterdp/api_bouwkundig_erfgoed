@@ -1,5 +1,6 @@
 <?php
 include_once ('lib/nlp.php');
+include_once ('lib/class_xml_place.php');
 
 /*
  * API Calls (required):
@@ -48,9 +49,12 @@ switch ($_GET['db']) {
 
 switch ($_GET['output']) {
 	case 'json':
+		header ('Content-type: application/json');
 		echo json_encode ($output);
 	break;
 	case 'xml':
+		header ('Content-type: application/xml');
+		print_r ($output);
 	break;
 	default:
 	break;

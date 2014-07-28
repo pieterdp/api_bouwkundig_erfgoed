@@ -306,11 +306,11 @@ class h_apps extends db_connect {
 				'wgs84_lat' => $wgs84_lat,
 				'wgs84_long' => $wgs84_long,
 				'id' => $a_id,
-				'h_id' => $h_id,
-				'str_id' => $s_id,
-				'dg_id' => $d_id,
-				'g_id' => $g_id,
-				'p_id' => $p_id
+				'huisnummer_id' => $h_id,
+				'straat_id' => $s_id,
+				'deelgemeente_id' => $d_id,
+				'gemeente_id' => $g_id,
+				'provincie_id' => $p_id
 			);
 			array_push ($address, $a);
 		}
@@ -349,11 +349,11 @@ class h_apps extends db_connect {
 				'wgs84_lat' => $wgs84_lat,
 				'wgs84_long' => $wgs84_long,
 				'id' => $a_id,
-				'h_id' => $h_id,
-				'str_id' => $s_id,
-				'dg_id' => $d_id,
-				'g_id' => $g_id,
-				'p_id' => $p_id
+				'huisnummer_id' => $h_id,
+				'straat_id' => $s_id,
+				'deelgemeente_id' => $d_id,
+				'gemeente_id' => $g_id,
+				'provincie_id' => $p_id
 			);
 			array_push ($address, $a);
 		}
