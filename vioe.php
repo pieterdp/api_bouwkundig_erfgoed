@@ -48,26 +48,15 @@ if (isset ($_POST['submit'])) {
 	} elseif ($_POST['type'] == 'mon') {
 		$list_of_ids = $nlp->monument_vioe ($query);
 		/* Flatten */
-		$f_r = array ();
+		/*$f_r = array ();
 		foreach ($list_of_ids as $key => $r) {
 			if ($key != 'total') {
 				$f_r = array_merge ($f_r, $r);
 			}
-		}
+		}*/
+		$f_r = $list_of_ids;
 		/* Get total amount */
 		$total = count ($list_of_ids);
-		/* Get offset */
-		$offset;
-		if (!isset $_GET['page']) {
-			/* offset = 0 */
-			$offset = 0;
-		} else {
-			$offset = $_GET['page'] * $ids_per_page - 1; /* Arrays start at 0 */
-		}
-		/* Divide in pages */
-		$amount_of_pages = $list_of_ids / $ids_per_page;
-		/* Show them one page at the time */
-		$current_relicts = $nlp->show_page ($list_of_ids, $ids_per_page, $offset);
 		$expl = '<h1>Resultaten</h1>
 	<p>Jouw zoektocht naar "<emp>'.$query.'</emp>" leverde '.$total.' ';
 		if (count ($f_r) != 1) {
@@ -76,7 +65,7 @@ if (isset ($_POST['submit'])) {
 			$expl = $expl.'resultaat';
 		}
 		$expl = $expl.' op.<br/><span style="copy-notice">(gebaseerd op data uit de Inventaris Onroerend Erfgoed)</span></p>';
-		$rx = $rp->create_monument_result ($current_relicts);
+		$rx = $rp->create_monument_result ($f_r);
 		$content = $expl.$rp->create_base_result ($rx);
 		echo $html->create_base_page ('Zoeken naar monumenten', $content, '<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />', '<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
 <script type="text/javascript" src="lib/html/minimal/map.js"></script>');
@@ -117,9 +106,9 @@ Bij het zoeken naar monumenten krijg je een lijst resultaten uit de eigen databa
 <li><strong>kerken in Ieper, Ieper</strong> &mdash; zoekt alle kerken in de deelgemeente Ieper van de hoofdgemeente Ieper</li>
 <li><strong>gevangenissen in Brugge</strong> &mdash; zoekt alle gevangenissen in de hoofdgemeente Brugge</li>
 <li><strong>herenhuizen in Ramskapelle</strong> &mdash; zoekt alle herenhuizen in de deelgemeente Ramskapelle (dit zijn alle deelgemeentes die Ramskapelle heten!)</li>
-<li><strong><a href="vioe.php?type=API&amp;query='.urlencode ('herenhuizen in Ramskapelle').'&amp;qt=typo">herenhuizen in Ramskapelle</a></strong> &mdash; API-query voor <emp>herenhuizen in Ramskapelle</emp>.</li>
+<li><strong><a href="api.php?db=vioe&amp;output=json&amp;query='.urlencode ('herenhuizen in Ramskapelle').'&amp;qt=typo">herenhuizen in Ramskapelle</a></strong> &mdash; API-query voor <emp>herenhuizen in Ramskapelle</emp>.</li>
 <li><strong>Parochiekerk Sint-Maarten in Sint-Truiden</strong> &mdash; zoekt naar de Parochiekerk Sint-Maarten in de deelgemeente Sint-Truiden (dit zijn alle deelgemeentes die Sint-Truiden heten!)</li>
-<li><strong><a href="vioe.php?type=API&amp;query='.urlencode ('Parochiekerk Sint-Maarten in Sint-Truiden').'&amp;qt=mon">Parochiekerk Sint-Maarten in Sint-Truiden</a></strong> &mdash; API-query voor <emp>Parochiekerk Sint-Maarten in Sint-Truiden</emp>.</li>
+<li><strong><a href="api.php?db=vioe&amp;output=json&amp;query='.urlencode ('Parochiekerk Sint-Maarten in Sint-Truiden').'&amp;qt=mon">Parochiekerk Sint-Maarten in Sint-Truiden</a></strong> &mdash; API-query voor <emp>Parochiekerk Sint-Maarten in Sint-Truiden</emp>.</li>
 
 </ul>';
 	echo $html->create_base_page ('Zoeken naar monumenten', $form.$expl);

@@ -114,9 +114,13 @@ class nlp {
             [did] => 554
         )*/
 		$monuments = array ();
-		foreach ($qs as $q) {
+		/*foreach ($qs as $q) {
 			array_push ($monuments, $this->m->query_relicten ($q['q'], $q['pid'], $q['gid'], $q['did']));
+		}*/
+		foreach ($qs as $q) {
+			$monuments = array_merge ($monuments, $this->m->match_monument ($q['q'], true, $q['pid'], $q['gid'], $q['did']));
 		}
+		//
 		return $monuments;
 	}
 

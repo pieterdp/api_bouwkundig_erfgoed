@@ -282,19 +282,20 @@ class h_apps extends db_connect {
 	 */
 	public function get_address_by_relict_id ($relict_id) {
 		$address = array ();
-		$q = "SELECT DISTINCT s.naam, d.naam, g.naam, p.naam, a.huisnummer, a.wgs84_lat, a.wgs84_long, a.id FROM adres a, straten s, deelgemeentes d, gemeentes g, provincies p, link l, relicten r
+		$q = "SELECT DISTINCT s.naam, d.naam, g.naam, p.naam, h.naam, a.wgs84_lat, a.wgs84_long, a.id, d.id, g.id, p.id, s.id, h.id FROM adres a, straten s, deelgemeentes d, gemeentes g, provincies p, link l, huisnummers h, relicten r
 		WHERE
 		a.str_id = s.id AND
 		a.gem_id = g.id AND
 		a.deelgem_id = d.id AND
 		a.prov_id = p.id AND
+		a.huisnummer_id = h.id AND
 		l.ID_link_a = a.id AND
 		l.ID_link_r = r.id AND
 		r.relict_id = ?";
 		$st = $this->c->prepare ($q);
 		$st->bind_param ('s', $relict_id);
 		$st->execute ();
-		$st->bind_result ($straat, $deelgemeente, $gemeente, $provincie, $huisnummer, $wgs84_lat, $wgs84_long, $a_id);
+		$st->bind_result ($straat, $deelgemeente, $gemeente, $provincie, $huisnummer, $wgs84_lat, $wgs84_long, $a_id, $d_id, $g_id, $p_id, $s_id, $h_id);
 		while ($st->fetch ()) {
 			$a = array (
 				'straat' => $straat,
@@ -304,7 +305,12 @@ class h_apps extends db_connect {
 				'huisnummer' => $huisnummer,
 				'wgs84_lat' => $wgs84_lat,
 				'wgs84_long' => $wgs84_long,
-				'id' => $a_id
+				'id' => $a_id,
+				'h_id' => $h_id,
+				'str_id' => $s_id,
+				'dg_id' => $d_id,
+				'g_id' => $g_id,
+				'p_id' => $p_id
 			);
 			array_push ($address, $a);
 		}
@@ -320,18 +326,19 @@ class h_apps extends db_connect {
 	 */
 	public function get_address_by_r_id ($r_id) {
 		$address = array ();
-		$q = "SELECT DISTINCT s.naam, d.naam, g.naam, p.naam, a.huisnummer, a.wgs84_lat, a.wgs84_long, a.id FROM adres a, straten s, deelgemeentes d, gemeentes g, provincies p, link l
+		$q = "SELECT DISTINCT s.naam, d.naam, g.naam, p.naam, h.naam, a.wgs84_lat, a.wgs84_long, a.id, d.id, g.id, p.id, s.id, h.id FROM adres a, straten s, deelgemeentes d, gemeentes g, provincies p, link l, huisnummers h
 		WHERE
 		a.str_id = s.id AND
 		a.gem_id = g.id AND
 		a.deelgem_id = d.id AND
 		a.prov_id = p.id AND
 		l.ID_link_a = a.id AND
+		a.huisnummer_id = h.id AND
 		l.ID_link_r = ?";
 		$st = $this->c->prepare ($q);
 		$st->bind_param ('s', $r_id);
 		$st->execute ();
-		$st->bind_result ($straat, $deelgemeente, $gemeente, $provincie, $huisnummer, $wgs84_lat, $wgs84_long, $a_id);
+		$st->bind_result ($straat, $deelgemeente, $gemeente, $provincie, $huisnummer, $wgs84_lat, $wgs84_long, $a_id, $d_id, $g_id, $p_id, $s_id, $h_id);
 		while ($st->fetch ()) {
 			$a = array (
 				'straat' => $straat,
@@ -341,7 +348,12 @@ class h_apps extends db_connect {
 				'huisnummer' => $huisnummer,
 				'wgs84_lat' => $wgs84_lat,
 				'wgs84_long' => $wgs84_long,
-				'id' => $a_id
+				'id' => $a_id,
+				'h_id' => $h_id,
+				'str_id' => $s_id,
+				'dg_id' => $d_id,
+				'g_id' => $g_id,
+				'p_id' => $p_id
 			);
 			array_push ($address, $a);
 		}
