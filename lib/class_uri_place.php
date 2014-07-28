@@ -93,6 +93,95 @@ class uri_place extends uri_base {
 	}
 
 	/*
+	 * Function to get the parent from an item that is not an adres/relict
+	 * @param string $entity_type
+	 * @param string $entity_id
+	 * @return $parent = array[x] = array (entity_type, entity_id, uri)
+	 */
+	public function get_parent ($entity_type, $entity_id) {
+		$in_hierarchy = array ('provincies', 'gemeentes', 'deelgemeentes', 'straten');
+		if (!in_array ($entity_type, $in_hierarchy)) {
+			echo "Error: $entity_type is not in the hierarchy table.";
+			return false;
+		}
+		/* Get the parent */
+		$q = "SELECT parent_type, parent_foreign_key FROM hierarchy WHERE entity_type = ?";
+		$st = $this->c->prepare ($q) or die ($this->c->error);
+		$st->bind_param ('s', $entity_type);
+		$st->execute ();
+		$st->bind_result ($parent_type, $parent_foreign_key);
+		$st->fetch ();
+		$st->close ();
+		$st = null;
+		if ($parent_type == null || $parent_foreign_key == null) {
+			/* Has no parent */
+			return false;
+		}
+		$q = "SELECT %s FROM %s WHERE id = ?";
+		$q = sprintf ($q, $this->c->real_escape_string ($parent_foreign_key), $this->c->real_escape_string ($entity_type));
+		$st = $this->c->prepare ($q) or die ($this->c->error);
+		$st->bind_param ('s', $entity_id);
+		$st->execute ();
+		$st->bind_result ($id);
+		$st->fetch ();
+		$st->close ();
+		$st = null;
+		/* Get the URI of the parent */
+		$uri = $this->translate_id_to_uri_id ($id, $parent_type);
+		return array (
+			$uri
+		);		
+	}
+
+	/*
+	 * Function to get the parent for a relict => can be huisnummer OR straat
+	 */
+	public function get_parent_relicten ($id) {
+		$parents = array ();
+		/* Get the address => if the huisnummer is like "zonder nummer", then make the street parent */
+		/* Can have multiple addresses! */
+		$q = "SELECT a.id as adres_id, h.naam as huisnummer, h.id as huisnummer_id, a.str_id as str_id FROM adres a, huisnummers h, link l WHERE
+			l.ID_link_r = ? AND
+			l.ID_link_a = a.id AND
+			a.huisnummer_id = h.id";
+		$st = $this->c->prepare ($q) or die ($this->c->error);
+		$st->bind_param ('s', $id);
+		$st->execute ();
+		$st->bind_result ($adres_id, $huisnummer, $huisnummer_id, $str_id);
+		$st->store_result ();
+		while ($st->fetch ()) {
+			if (preg_match ('/zonder/i', $huisnummer) != false) {
+				/* Street is parent */
+				array_push ($parents, $this->translate_id_to_uri_id ($str_id, 'straten'));
+			} else {
+				/* Huisnummer is parent */
+				array_push ($parents, $this->translate_id_to_uri_id ($huisnummer_id, 'huisnummers'));
+			}
+		}
+		$st->close ();
+		$st = null;
+		return $parents;
+	}
+	/*
+	 * Function to get the parent for a huisnummer
+	 */
+	public function get_parent_huisnummers ($id) {
+		$parents = array ();
+		$q = "SELECT h.str_id FROM huisnummers h WHERE h.id = ?";
+		$st = $this->c->prepare ($q) or die ($this->c->error);
+		$st->bind_param ('s', $id);
+		$st->execute ();
+		$st->bind_result ($str_id);
+		$st->store_result ();
+		while ($st->fetch ()) {
+			array_push ($parents, $this->translate_id_to_uri_id ($str_id, 'straten'));
+		}
+		$st->close ();
+		$st = null;
+		return $parents;
+	}
+	
+	/*
 	 * Function to get the uri_id from the id & table
 	 * @param string $entity_id
 	 * @param string $entity_type
@@ -116,20 +205,26 @@ class uri_place extends uri_base {
 	 * @return array $provincie (naam, wgs84_lat, wgs84_long, children => array (uri_id ...)) (assoc)
 	 */
 	public function fetch_provincies ($provincie_id) {
-		return $this->boilerplate_fetch_place_with_children ('provincies', $provincie_id);
+		$place = $this->boilerplate_fetch_place_with_children ('provincies', $provincie_id);
+		$place['parents'] = $this->get_parent ('provincies', $provincie_id);
+		return $place;
 	}
 
 	/*
 	 * Function to fetch a gemeente with children
 	 */
 	public function fetch_gemeentes ($gemeente_id) {
-		return $this->boilerplate_fetch_place_with_children ('gemeentes', $gemeente_id);
+		$place = $this->boilerplate_fetch_place_with_children ('gemeentes', $gemeente_id);
+		$place['parents'] = $this->get_parent ('gemeentes', $gemeente_id);
+		return $place;
 	}
 	/*
 	 * Function to fetch a deelgemeente with children
 	 */
 	public function fetch_deelgemeentes ($deelgemeente_id) {
-		return $this->boilerplate_fetch_place_with_children ('deelgemeentes', $deelgemeente_id);
+		$place = $this->boilerplate_fetch_place_with_children ('deelgemeentes', $deelgemeente_id);
+		$place['parents'] = $this->get_parent ('deelgemeentes', $deelgemeente_id);
+		return $place;
 	}
 	/*
 	 * Function to fetch a straat with children (warning! relicts with number "zonder number" are direct children of the straat!)
@@ -179,8 +274,8 @@ class uri_place extends uri_base {
 			'naam' => $straat['naam'],
 			'wgs84_lat' => $straat['wgs84_lat'],
 			'wgs84_long' => $straat['wgs84_long'],
-			'children' => $children
-			
+			'children' => $children,
+			'parents' => $this->get_parent ('straten', $straat_id)	
 		);
 	}
 	/*
@@ -210,7 +305,8 @@ class uri_place extends uri_base {
 			'naam' => $huisnummer['naam'],
 			'wgs84_lat' => $huisnummer['wgs84_lat'],
 			'wgs84_long' => $huisnummer['wgs84_long'],
-			'children' => $children
+			'children' => $children,
+			'parents' => $this->get_parent_huisnummers ($huisnummer['id'])
 			
 		);
 	}
@@ -242,8 +338,8 @@ class uri_place extends uri_base {
 			'alt_naam' => $relict['alt_naam'],
 			'wgs84_lat' => $relict['wgs84_lat'],
 			'wgs84_long' => $relict['wgs84_long'],
-			'children' => $children
-			
+			'children' => $children,
+			'parents' => $this->get_parent_relicten ($relict['id'])
 		);
 	}
 	/*

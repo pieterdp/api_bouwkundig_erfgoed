@@ -32,14 +32,14 @@ $uri_response = call_user_func (array ($u, 'fetch_'.$real_item['entity_type']), 
 /* Create XML node */
 $xml_node = $xml->create_place_node ($uri_response['naam'], $real_item['entity_type'], $base_uri);
 $xml_node = $xml->add_geo_to_node ($xml_node, $uri_response['wgs84_lat'], $uri_response ['wgs84_long']);
-if (isset ($uri_response['children'])) {
+if (isset ($uri_response['children']) && is_array ($uri_response['children']) == true) {
 	$child_uris = array ();
 	foreach ($uri_response['children'] as $child) {
 		array_push ($child_uris, 'http://erfgoeddb.helptux.be/uri/place/'.$child);
 	}
 	$xml_node = $xml->form_hierarchy ($xml_node, $child_uris, 'has_part');
 }
-if (isset ($uri_response['parents'])) {
+if (isset ($uri_response['parents']) && is_array ($uri_response['parents']) == true) {
 	$parent_uris = array ();
 	foreach ($uri_response['parents'] as $parent) {
 		array_push ($parent_uris, 'http://erfgoeddb.helptux.be/uri/place/'.$parent);
