@@ -72,12 +72,14 @@ if (isset ($_POST['submit'])) {
 	}
 } else {
 	/* Show form */
-	$form = '<form method="post" action="" id="nlp_form">
+	$form = '<h1>Zoeken naar monumenten</h1>
+	<form method="post" action="" id="nlp_form">
 	<input type="text" size="64" name="query" id="query" />&nbsp;&nbsp;<input type="submit" value="Zoeken" id="smb" />
 	<input type="hidden" name="submit" id="submit" value="1" />
-	<br/> <input type="radio" name="type" id="type" value="typo" />&nbsp;Typologie&nbsp;&nbsp;<input type="radio" name="type" id="type" value="mon" />&nbsp;Monument
+	<br/> <input type="radio" name="type" id="type" value="typo" />&nbsp;Typologie&nbsp;&nbsp;<input type="radio" name="type" id="type" value="mon" checked="true" />&nbsp;Monument
 </form>';
-	$expl = '<h1>Zoeken naar monumenten</h1>
+	$expl = '
+<h2>Handleiding</h2>
 <p>Met deze \'API\' kan je zoeken naar bepaalde soorten (=typologie) monumenten of naar de monumenten zelf in gemeentes (in Vlaanderen). Dit is een soort \'wrapper\' rond het zoekformulier van de Inventaris Onroerend Erfgoed, omdat die niet zo gebruiksvriendelijk is.</p>
 <p>Als je zoekt op soorten monumenten krijg je de URL van de zoekpagina van de Inventaris terug (typologieën worden niet geëxporteerd); als je zoekt op monumenten krijg je resultaten uit de eigen database (gebaseerd op een export van de Inventaris).</p>
 <p>Zoeken gebeurt in een zin:
