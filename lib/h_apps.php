@@ -22,33 +22,32 @@ class h_apps extends db_connect {
 
 	/*
 	 * Function to eliminate duplicates in result sets of monumenten
-	 * @param string $key - key on which to sort
 	 * @param array $input[x] = array (y)
 	 * @return array $output[$key] = array (y)
 	 */
-	protected function eliminate_duplicates_monuments ($key, $input) {
+	protected function eliminate_duplicates_monuments ($input) {
 		$output = array ();
-		$i = 0;
-		foreach ($input as $k => $array) {
-			$i++;
-			if (isset ($output[$array[$key]])) {
-				##
-				# Item exists - compare
-				# (but ignore 'id', as those are supposed to be different!)
-				##
-				foreach ($array as $kk => $vv) {
-					if ($vv != $output[$array[$key]][$kk] && $kk != 'id') {
-						/* Also works for arrays - see http://be2.php.net/manual/en/language.operators.array.php */
-						##
-						# They are not identical
-						##
-						$output[$array[$key].'-'.$i] = $array;
-						break;
-					}
-				}
+		foreach ($input as $result) {
+			/* relict_id is the key in $output, see if it exists */
+			if (isset ($output[$result['relict_id']])) {
+				$output[$result['relict_id']]['adres'] = array_merge ($output[$result['relict_id']]['adres'], $result['adres']);
 			} else {
-				$output[$array[$key]] = $array;
+				/* Add */
+				$output[$result['relict_id']] = $result;
 			}
+		}
+		/* Merge result adres */
+		/*
+		 * output as result
+		 * 	result[adres] = o_adres
+		 * 	$result[adres][adres誰d]*/
+		foreach ($output as $relict_id => $result) {
+			$old_adres = $result['adres'];
+			$result['adres'] = array ();
+			foreach ($old_adres as $adres) {
+				$result['adres'][$adres['id']] = $adres;
+			}
+			$output[$relict_id] = $result;
 		}
 		return $output;
 	}
@@ -420,7 +419,7 @@ class h_apps extends db_connect {
 	//	print_r ($ids);
 		$results = $this->list_relicten ($ids, 'ALL');
 		/* Eliminate duplicates */
-		$results = $this->eliminate_duplicates_monuments ('relict_id', $results);
+		$results = $this->eliminate_duplicates_monuments ($results);
 	//	print_r ($results);
 	//	exit (0);
 		return $results;
